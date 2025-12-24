@@ -24,9 +24,9 @@ repository               : "royyaoyh.github.io"
 author:
   # Biographic information
   avatar           : "profile.png"
-  name             : "Roy Yao"
+  name             : "Roy Yao / 姚懿恒"
   pronouns         : he/him 
-  bio              : "Third Year Undergrad Studying Bioengineering & EECS"
+  bio              : "Third Year Undergrad @ UC Berkeley"
   location         : "Irvine, CA"
   employer         : "UC Berkeley"
   uri              : # URL
@@ -64,9 +64,9 @@ author:
   goodreads        : # Username
   google_plus      : # Username
   keybase          : # Username
-  instagram        : "https://www.instagram.com/roy_yao_h/"
+  instagram        : "roy_yao_h/"
   lastfm           : # Username
-  linkedin         : "https://www.linkedin.com/in/27yaoroy/"
+  linkedin         : "27yaoroy/"
   mastodon         : # URL
   medium           : # URL
   pinterest        : # Username
@@ -255,15 +255,15 @@ defaults:
     values:
       layout: single
       author_profile: true
-  # _teaching
-  - scope:
-      path: ""
-      type: teaching
-    values:
-      layout: single
-      author_profile: true
-      share: true
-      comments: true
+  # # _teaching
+  # - scope:
+  #     path: ""
+  #     type: teaching
+  #   values:
+  #     layout: single
+  #     author_profile: true
+  #     share: true
+  #     comments: true
   # _publications
   - scope:
       path: ""
@@ -273,23 +273,23 @@ defaults:
       author_profile: true
       share: true
       comments: true
-  # _portfolio
-  - scope:
-      path: ""
-      type: portfolio
-    values:
-      layout: single
-      author_profile: true
-      share: true
-      comment: true
-  # _talks
-  - scope:
-      path: ""
-      type: talks
-    values:
-      layout: talk
-      author_profile: true
-      share: true
+  # # _portfolio
+  # - scope:
+  #     path: ""
+  #     type: portfolio
+  #   values:
+  #     layout: single
+  #     author_profile: true
+  #     share: true
+  #     comment: true
+  # # _talks
+  # - scope:
+  #     path: ""
+  #     type: talks
+  #   values:
+  #     layout: talk
+  #     author_profile: true
+  #     share: true
 
 
 # Sass/SCSS
