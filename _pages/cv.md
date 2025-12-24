@@ -8,12 +8,14 @@ redirect_from:
 ---
 
 {% include base_path %}
+------
 
 Education
 ======
 <!-- * Ph.D in Version Control Theory, GitHub University, 2018 (expected)
 * M.S. in Jekyll, GitHub University, 2014 -->
-* B.S. in Bioengineering and EECS, UC Berkeley, August 2023-May 2027 (Expected)
+
+* B.S. in Bioengineering and EECS, UC Berkeley, Aug 2023 - May 2027 (Expected)
 
 <!-- Work experience
 ======
@@ -31,7 +33,7 @@ Education
   * GitHub University
   * Duties included: Tagging issues
   * Supervisor: Professor Git -->
-  
+<!--   
 Skills
 ======
 * Tools
@@ -44,7 +46,7 @@ Skills
   * Libraries: NumPy, PyTorch, OpenCV
 * Other Skills
   * Signal Processing, Optimization, Circuit Design
-  * data structures and algorithms, CPU architecture, pipelining, control flow, digital logic, memory management 
+  * data structures and algorithms, CPU architecture, pipelining, control flow, digital logic, memory management  -->
 
 <!-- Publications
 ======
