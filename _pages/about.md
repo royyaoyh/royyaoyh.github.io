@@ -7,8 +7,8 @@ redirect_from:
   - /about.html
 ---
 
-<!-- About Me
-====== -->
+About Me
+======
 Hello, My name is Roy Yao. I am an undergraduate student currently studying Bioengineering and EECS at UC Berkeley. My interests lies in imaging and devices. I have multiple experiences in signal processing, software, and hardware. 
 
 I am currently part of [Conolly Lab](https://bisl.studentorg.berkeley.edu/) under [Professor Steven Conolly](https://www2.eecs.berkeley.edu/Faculty/Homepages/sconolly.html) where I work on implementing a low noise preamp for Magnetic Particle Imaging (MPI). Besides research, I am also involved with [Bioengineering Honor Society (BioEHS)](https://bioehs.studentorg.berkeley.edu/) and [Neurotech@Berkeley](https://neurotech.studentorg.berkeley.edu/).
