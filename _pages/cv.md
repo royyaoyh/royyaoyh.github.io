@@ -33,7 +33,7 @@ Education
   * GitHub University
   * Duties included: Tagging issues
   * Supervisor: Professor Git -->
-<!--   
+  
 Skills
 ======
 * Tools
@@ -46,7 +46,7 @@ Skills
   * Libraries: NumPy, PyTorch, OpenCV
 * Other Skills
   * Signal Processing, Optimization, Circuit Design
-  * data structures and algorithms, CPU architecture, pipelining, control flow, digital logic, memory management  -->
+  * data structures and algorithms, CPU architecture, pipelining, control flow, digital logic, memory management 
 
 <!-- Publications
 ======
