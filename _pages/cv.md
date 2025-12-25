@@ -39,7 +39,7 @@ Skills
 * Tools
   * COMSOL, Arduino, SolidWorks
   * Git, Anaconda, Valgrind, CGDB
-  * Arduino, LT Spice, KiCad
+  * LT Spice, KiCad
 * Programming Languages
   * Python, Matlab, Java, C, SQL, 
   * RISC-V Assembly, Logisim 
