@@ -6,6 +6,12 @@ author_profile: true
 ---
 
 ---
+### Spring 2026
+- **BIOENG 121L**: BioMEMS and BioNanotechnology Laboratory
+- **BIOENG 196**: Undergraduate Design Research  
+- **COMPSCI 162**: Operating Systems and System Programming 
+- **COMPSCI 189**: Introduction to Machine Learning  
+
 ### Fall 2025
 - **BIOENG 196**: Undergraduate Design Research  
 - **EECS 127**: Optimization Models in Engineering  

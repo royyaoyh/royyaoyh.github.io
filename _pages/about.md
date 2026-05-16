@@ -6,7 +6,7 @@ redirect_from:
   - /about.html
 ---
 
-Hello, my name is Roy Yao. I am an undergraduate student currently studying Bioengineering and EECS at UC Berkeley. My interests lie in imaging and devices. I have experience in signal processing, software, and hardware.
+Hello, my name is Roy Yao. I am an undergraduate student currently studying Bioengineering and EECS at UC Berkeley. My interests lie in imaging and devices. I have experience in signal processing, machine learning, and hardware.
 
 I am currently part of [Conolly Lab](https://bisl.studentorg.berkeley.edu/) under [Professor Steven Conolly](https://www2.eecs.berkeley.edu/Faculty/Homepages/sconolly.html) where I work on implementing a low noise preamp for Magnetic Particle Imaging (MPI). Besides research, I am also involved with [Bioengineering Honor Society (BioEHS)](https://bioehs.studentorg.berkeley.edu/) and [Neurotech@Berkeley](https://neurotech.studentorg.berkeley.edu/).
 
@@ -14,6 +14,14 @@ In my free time, I love reading about history and am currently trying to pick up
 
 Projects
 ------
+**[UC Berkeley Bioengineering Course Map](https://bioehs.studentorg.berkeley.edu/studentservices/coursemapinteractive/)**
+- Collected, summarized, and graphed all 45 undergraduate Bioengineering courses at UC Berkeley in a directed acyclic graph format, including prerequisite relationships, technical topics, concentration, workload, and tips from students. 
+
+**[A Microfluidic Device Enabling Single-Cell Isolation Using Hydrodynamic Trapping](files/bioe121l.pdf)**
+- Designed, fabricated, and tested a passive PDMS microfluidic platform for deterministic single-particle trapping compatible with standard 96-well microtiter plates.
+
+- Iterated across multiple trap geometries and channel dimensions and achieved up to 83% single-bead trapping efficiency in serial layouts and 81.25% in 9 mm-spaced layouts.
+
 **[EMG-Based Word Detection Sensor](files/bioe101.pdf)**
 - Designed and prototyped a facial EMG sensor using Ag/AgCl electrodes, AD620 instrumentation amplifiers, and Arduino MKR Zero ADC for real-time speech-related signal acquisition. 
 - Implemented two-stage band-pass filtering (20–500 Hz, gain ≈ 4000) and autocorrelation-based classification augmented with cosine similarity, MSE, and CNN algorithms, achieving 99% word detection accuracy. 
