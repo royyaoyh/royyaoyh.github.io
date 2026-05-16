@@ -1,4 +1,4 @@
----
++---
 layout: archive
 title: "CV"
 permalink: /cv/
@@ -37,7 +37,7 @@ Education
 Skills
 ======
 * Tools
-  * COMSOL, Arduino, SolidWorks
+  * COMSOL, Arduino, AutoCAD, SolidWorks
   * Git, Anaconda, Valgrind, CGDB
   * LTSpice, KiCad
 * Programming Languages
@@ -46,7 +46,8 @@ Skills
   * Libraries: NumPy, PyTorch, OpenCV
 * Other Skills
   * Signal Processing, Optimization, Circuit Design
-  * data structures and algorithms, CPU architecture, pipelining, control flow, digital logic, memory management 
+  * Data Structures and Algorithms, CPU Architecture, Pipelining, Control Flow, Digital Logic, Memory Management 
+  * Photolithography, Soft Lithography
 
 <!-- Publications
 ======
