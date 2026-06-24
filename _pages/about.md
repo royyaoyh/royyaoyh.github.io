@@ -22,6 +22,11 @@ Projects
 
 - Iterated across multiple trap geometries and channel dimensions and achieved up to 83% single-bead trapping efficiency in serial layouts and 81.25% in 9 mm-spaced layouts.
 
+**[Multimodal Articulatory Inference: Radio-Visual Sensing for Silent Speech
+Recognition with RVTALL](files/ntab_poster.pdf)**
+- Researched silent speech interfaces. Built ML pipelines over 6 sensor modalities (radar, video, laser speckle, EMG, and audio) to decode speech without vocalization; achieved 71.15% test accuracy across 30 phoneme/word/sentence classes using a 1D CNN on laser speckle data — ~20× better than chance
+- Designed cross-modal data synchronization, modality-specific feature extraction (Mel-spectrograms, lip landmarks, CNN embeddings), and encoder architectures for a late-fusion multimodal decoder targeting open-vocabulary silent speech
+
 **[EMG-Based Word Detection Sensor](files/bioe101.pdf)**
 - Designed and prototyped a facial EMG sensor using Ag/AgCl electrodes, AD620 instrumentation amplifiers, and Arduino MKR Zero ADC for real-time speech-related signal acquisition. 
 - Implemented two-stage band-pass filtering (20–500 Hz, gain ≈ 4000) and autocorrelation-based classification augmented with cosine similarity, MSE, and CNN algorithms, achieving 99% word detection accuracy. 
