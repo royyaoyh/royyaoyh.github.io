@@ -10,11 +10,11 @@ location: "City, Country"
 
 This is a description of a teaching experience. You can use markdown like any other post.
 
-Heading 1
+Part 1: Selfie: The Wrong Way vs. The Right Way
 ======
 
-Heading 2
+Part 2: Architectural Perspective Compression
 ======
 
-Heading 3
+Part 3: The Dolly Zoom
 ======
