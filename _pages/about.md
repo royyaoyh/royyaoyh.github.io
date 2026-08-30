@@ -14,8 +14,8 @@ In my free time, I love reading about history and am currently trying to pick up
 
 Projects
 ------
-**[CS 180: Intro to Computer Vision and Computational Photography Projects](/cs180/)**
--  
+**[CS 180 Projects](/cs180/)**
+-  Projects from [CS 180: Intro to Computer Vision and Computational Photography](https://cal-cs180.github.io/fa26/). Currently taking the class in Fall 2026
 
 **[UC Berkeley Bioengineering Course Map](https://bioehs.studentorg.berkeley.edu/studentservices/coursemapinteractive/)**
 - Collected, summarized, and graphed all 45 undergraduate Bioengineering courses at UC Berkeley in a directed acyclic graph format, including prerequisite relationships, technical topics, concentration, workload, and tips from students. 
