@@ -54,4 +54,4 @@ The same principle applies to the building in reverse. When you walk close to th
   <img src="/images/cs180/proj0/两面包夹芝士.gif">
 </div>
 
-Cheese Sandwitch
+Featured my toy shark: Cheese Sandwitch
