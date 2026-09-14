@@ -2,7 +2,7 @@
 title: "Project 1: Images of the Russian Empire: Colorizing the Prokudin-Gorskii Photo Collection"
 collection: cs180
 permalink: /cs180/project_1/
-date: 2026-09-15
+date: 2026-09-14
 layout: projects
 ---
 
