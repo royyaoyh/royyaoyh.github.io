@@ -1,0 +1,5 @@
+IMAGE                          SHIFT (G/R)
+-----                          -----------
+bridge.tif                     (G: (35, 0), R: (124, -1))
+building1.tif                  (G: (32, -16), R: (78, -25))
+lake_building.tif              (G: (41, -16), R: (92, -29))
