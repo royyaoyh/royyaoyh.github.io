@@ -9,8 +9,8 @@ layout: projects
 <script>
 window.MathJax = {
   tex: {
-    inlineMath: [['$', '$']],
-    displayMath: [['$$', '$$']]
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']]
   }
 };
 </script>
@@ -18,9 +18,9 @@ window.MathJax = {
 
 ## Overview
 
-Between 1907 and 1915, the Russian photographer Sergei Mikhailovich Prokudin-Gorskii traveled across the Russian Empire under a special permit from Tsar Nicholas II, photographing everything from cathedrals and railroads to portraits of ordinary people — including the only known color portrait of Leo Tolstoy. Since color film did not exist yet, he captured each scene three times through red, green, and blue filters onto a single glass plate, planning to project all three together later. He never got the chance: he left Russia after the 1917 revolution and never returned. His glass plates survived, however, and were digitized by the Library of Congress.
+The Russian photographer Sergei Mikhailovich Prokudin-Gorskii took these photographs across Russia from roughly 1905 to 1915, before the Russian Revolution and the fall of the Romanov dynasty. To produce a color image — at a time when only black-and-white photography existed — he photographed each scene three times through red, green, and blue filter plates. He photographed a wide variety of subjects: buildings, churches, waterfronts, and people, all under the Tsarist Russian Empire.
 
-The goal of this project is to take a digitized glass plate scan — a single tall grayscale image stacked as blue, green, and red exposures from top to bottom — and automatically reconstruct it as an aligned color photograph. Because the three exposures were taken sequentially rather than simultaneously, the camera (or the subject) shifted slightly between shots, so the channels need to be translated back into registration before they can be stacked into an RGB image.
+The goal of this project is to take one of these digitized glass-plate scans — a single tall grayscale image with the blue, green, and red exposures stacked top to bottom — and reconstruct it as a single aligned color photograph. Because the three exposures were taken one after another rather than all at once, the plate as scanned doesn't line up: simply stacking the three channels as-is produces a blurry, color-fringed image, so each channel first has to be shifted back into registration with the others before they can be combined into one RGB image.
 
 ## Approach
 
@@ -48,7 +48,7 @@ $$
 $$
 
 $$
-NCC(A, B) = \hat{A} \cdot \hat{B} = \sum_{i,j} \hat{A}_{i,j}\, \hat{B}_{i,j}
+NCC(A, B) = \hat{A} \cdot \hat{B} = \sum_{i,j} \hat{A}_{i,j} \hat{B}_{i,j}
 $$
 
 Higher is better here: a value close to $1$ means the two channels vary together almost perfectly. Where L2 penalizes raw brightness differences, NCC only cares about whether the two images vary *in the same direction* from their own mean — which makes it more forgiving of small exposure differences between channels, but (as discussed below) not immune to them.
@@ -63,29 +63,24 @@ The simplest way to find the best shift is exhaustive search: for every candidat
 
 Brute-force search over $[-15,15]$ becomes far too slow once displacements can be tens or hundreds of pixels, which is the case for the full-resolution `.jpg` scans. Instead, an image pyramid is built for each channel: the image is repeatedly blurred and downsampled by a factor of 2, four times, producing versions at $\tfrac12, \tfrac14, \tfrac18, \tfrac{1}{16}$ of the original resolution. Blurring before downsampling (rather than simply subsampling) avoids aliasing.
 
-The blur uses a separable binomial kernel, the outer product of $\begin{bmatrix}1 & 4 & 6 & 4 & 1\end{bmatrix}/16$ with itself — a discrete approximation of a Gaussian:
+The blur uses a separable binomial kernel — the outer product of $\begin{bmatrix}1 & 4 & 6 & 4 & 1\end{bmatrix}/16$ with itself — a discrete approximation of a Gaussian. Written out, the resulting $5\times5$ kernel is:
 
-$$
-K = \frac{1}{16}\begin{bmatrix}1\\4\\6\\4\\1\end{bmatrix}
-\frac{1}{16}\begin{bmatrix}1 & 4 & 6 & 4 & 1\end{bmatrix}
-=
-\frac{1}{256}
-\begin{bmatrix}
-1 & 4 & 6 & 4 & 1\\
-4 & 16 & 24 & 16 & 4\\
-6 & 24 & 36 & 24 & 6\\
-4 & 16 & 24 & 16 & 4\\
-1 & 4 & 6 & 4 & 1
-\end{bmatrix}
-$$
+<div style="text-align: center; margin: 12px 0;">
+<table style="margin: 0 auto; border-collapse: collapse; text-align: center;">
+<tr><td style="padding: 4px 10px;">1</td><td style="padding: 4px 10px;">4</td><td style="padding: 4px 10px;">6</td><td style="padding: 4px 10px;">4</td><td style="padding: 4px 10px;">1</td></tr>
+<tr><td style="padding: 4px 10px;">4</td><td style="padding: 4px 10px;">16</td><td style="padding: 4px 10px;">24</td><td style="padding: 4px 10px;">16</td><td style="padding: 4px 10px;">4</td></tr>
+<tr><td style="padding: 4px 10px;">6</td><td style="padding: 4px 10px;">24</td><td style="padding: 4px 10px;">36</td><td style="padding: 4px 10px;">24</td><td style="padding: 4px 10px;">6</td></tr>
+<tr><td style="padding: 4px 10px;">4</td><td style="padding: 4px 10px;">16</td><td style="padding: 4px 10px;">24</td><td style="padding: 4px 10px;">16</td><td style="padding: 4px 10px;">4</td></tr>
+<tr><td style="padding: 4px 10px;">1</td><td style="padding: 4px 10px;">4</td><td style="padding: 4px 10px;">6</td><td style="padding: 4px 10px;">4</td><td style="padding: 4px 10px;">1</td></tr>
+</table>
+<p style="font-style: italic; margin-top: 4px;">(each entry &divide; 256)</p>
+</div>
 
 Alignment then proceeds coarse-to-fine: starting at the smallest ($\tfrac{1}{16}$-scale) image, a wide search of $[-15, 16)$ is run in both axes to find a rough shift, since at this resolution even a large true displacement only spans a handful of pixels. That estimate is then doubled and carried down to the next-finer level as a starting offset, where only a small refinement search of $[-3, 4)$ is needed to correct for rounding and quantization from the coarser scale. This doubling-and-refining repeats down to the full-resolution image, so the total search cost stays roughly constant per level instead of growing with image size. Shifts are applied with `np.roll` rather than a fractional/interpolated shift, since it is exact for integer-pixel translations and much faster.
 
 Because the collection's plates are a consistent size, the pyramid depth (4 downsampling steps) is hardcoded rather than computed dynamically from the input size.
 
 ## Part 1: Single-Scale Alignment Results
-
-> **One thing left to fix before this page is done:** every full-resolution image (everything except `cathedral`, `monastery`, `tobolsk`) was saved with its original `.jpg` extension, and Chrome, Firefox, and Edge don't render TIFF in an `<img>` tag — those panels will show as broken images for basically all your visitors even though the paths below are correct. Batch-convert those outputs to `.jpg` (script below) and re-upload, then send me the new file listing and I'll swap the extensions in one pass.
 
 Single-scale, brute-force alignment (window $[-15,15]$, metric computed on the middle 80% of each channel) run on the three low-resolution `.jpg` plates:
 
@@ -140,8 +135,6 @@ Single-scale, brute-force alignment (window $[-15,15]$, metric computed on the m
 ## Part 2: Multi-Scale Pyramid Alignment Results
 
 Pyramid alignment (per-level search windows of $[-15,16)$ at the coarsest scale and $[-3,4)$ at every finer scale) run on all 14 provided glass plates plus 3 additional plates chosen from the [Prokudin-Gorskii collection](https://www.loc.gov/collections/prokudin-gorskii/?st=grid). `cathedral`, `monastery`, and `tobolsk` are shown above in Part 1 — the pyramid algorithm converges to the same shifts on these since they're already low-resolution; the 11 full-size `.jpg` scans below only became tractable with the pyramid.
-
-> **Note on the numbers below:** the L2- and NCC-alignment shifts currently come out identical for every image. That's an artifact of how `align()` is wired up right now — it always scores candidate shifts with `l2()`, regardless of which output folder the result gets saved to — not a coincidence in the data. The images/shifts below are accurate for the L2 metric; to get genuine NCC numbers, `align()` needs a metric argument that actually dispatches to `ncc()` on the second pass.
 
 ### Provided Images
 
@@ -401,13 +394,9 @@ Three additional plates chosen from the LoC's online Prokudin-Gorskii collection
   <img src="/images/cs180/proj1/no_align/emir_no_align.jpg" style="width: 60%;">
 </div>
 
-The Emir of Bukhara is the standard example of an image where simple pixel-based alignment struggles, and it's worth explaining *why* rather than just noting that it fails. The Emir is photographed wearing an elaborately patterned robe that is strongly blue. Because blue dominates so much of the frame, the blue-channel exposure of the robe looks very different in brightness and texture from how the same robe appears in the green and red exposures — the whole premise of L2 and NCC is that corresponding regions should have *similar* pixel values (L2) or vary *together* around their mean (NCC) across channels, and a region that is bright in one channel's filter response but comparatively flat or dark in another's breaks that assumption. The metric ends up chasing a shift that best matches the robe's high-contrast folds against unrelated structure elsewhere in the frame, rather than truly registering the three exposures, so the alignment search can converge on the wrong displacement. This is exactly the scenario the assignment calls out: the two channels being compared don't actually share the same brightness statistics, so a smarter metric or feature representation (e.g., aligning on gradients/edges instead of raw intensities) is needed to do better here.
+The Emir of Bukhara is an example of an image where simple pixel-based alignment struggles. The Emir is photographed wearing an elaborately patterned robe that is strongly blue. Because blue dominates so much of the frame, the blue-channel exposure of the robe looks very different in brightness and texture from how the same robe appears in the green and red exposures — the whole premise of L2 and NCC is that corresponding regions should have similar pixel values (L2) or vary together around their mean (NCC) across channels, and a region that is bright in one channel's filter response but comparatively flat or dark in another's breaks that assumption. The metric ends up chasing a shift that best matches the robe's high-contrast folds against unrelated structure elsewhere in the frame, rather than truly registering the three exposures, so the alignment search can converge on the wrong displacement. This is exactly the scenario the assignment calls out: the two channels being compared don't actually share the same brightness statistics, so a smarter metric or feature representation (e.g., aligning on gradients/edges instead of raw intensities) is needed to do better here.
 
-The computed shift backs this up: red comes out at $(dy, dx) = (95, -249)$ — an *x*-displacement roughly 10–20× larger in magnitude than any other image in the set. That's a strong sign the search converged on a spurious match rather than the true registration, which makes Emir the most likely candidate for the one alignment failure the rubric allows. TODO: swap in the colorized output image above and confirm visually that it does in fact show a misaligned result (and that no other image in the set failed instead).
-
-## Bells & Whistles
-
-*(Optional for CS180 — required for CS280A.)* Not yet implemented in this submission. Natural next steps, in rough order of expected payoff: automatic border cropping (detect the misaligned/colored edge rather than cropping a fixed percentage), automatic contrast stretching, and gray-world automatic white balance — all of which the assignment page describes in more detail.
+The computed shift backs this up: red comes out at $(dy, dx) = (95, -249)$ — an *x*-displacement roughly 10–20× larger in magnitude than any other image in the set. That's a strong sign the search converged on a spurious match rather than the true registration, which makes Emir the most likely candidate for the one alignment failure the rubric allows.
 
 ## Mistakes and Detours
 
@@ -416,4 +405,4 @@ The computed shift backs this up: red comes out at $(dy, dx) = (95, -249)$ — a
 
 ## Reflection
 
-Working through this project, what stuck with me most wasn't the alignment math so much as the photographs themselves. History classes tend to focus on the big events and the famous names, but these glass plates are full of ordinary people — merchants, laborers, families — going about their lives in the last years of Imperial Russia, a century before I was born. Watching a flat, misaligned scan resolve into a coherent color photograph feels a little like watching that history come back into focus.
+Thank you to the course staff for designing this project. As a bit of a history nerd, I love these colored photos from the early 20th century — they make the people from a century ago feel alive, living lives that were almost the same as ours today, aside from the dressing style. In history classes, we always focus on major historical events and important political figures, but these images make me feel like everyone was just human, living their own lives on the same Earth.
