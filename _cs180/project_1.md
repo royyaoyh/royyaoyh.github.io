@@ -61,7 +61,7 @@ The simplest way to find the best shift is exhaustive search: for every candidat
 
 ### Multi-Scale (Pyramid) Alignment
 
-Brute-force search over $[-15,15]$ becomes far too slow once displacements can be tens or hundreds of pixels, which is the case for the full-resolution `.tif` scans. Instead, an image pyramid is built for each channel: the image is repeatedly blurred and downsampled by a factor of 2, four times, producing versions at $\tfrac12, \tfrac14, \tfrac18, \tfrac{1}{16}$ of the original resolution. Blurring before downsampling (rather than simply subsampling) avoids aliasing.
+Brute-force search over $[-15,15]$ becomes far too slow once displacements can be tens or hundreds of pixels, which is the case for the full-resolution `.jpg` scans. Instead, an image pyramid is built for each channel: the image is repeatedly blurred and downsampled by a factor of 2, four times, producing versions at $\tfrac12, \tfrac14, \tfrac18, \tfrac{1}{16}$ of the original resolution. Blurring before downsampling (rather than simply subsampling) avoids aliasing.
 
 The blur uses a separable binomial kernel, the outer product of $\begin{bmatrix}1 & 4 & 6 & 4 & 1\end{bmatrix}/16$ with itself — a discrete approximation of a Gaussian:
 
@@ -85,7 +85,7 @@ Because the collection's plates are a consistent size, the pyramid depth (4 down
 
 ## Part 1: Single-Scale Alignment Results
 
-> **One thing left to fix before this page is done:** every full-resolution image (everything except `cathedral`, `monastery`, `tobolsk`) was saved with its original `.tif` extension, and Chrome, Firefox, and Edge don't render TIFF in an `<img>` tag — those panels will show as broken images for basically all your visitors even though the paths below are correct. Batch-convert those outputs to `.jpg` (script below) and re-upload, then send me the new file listing and I'll swap the extensions in one pass.
+> **One thing left to fix before this page is done:** every full-resolution image (everything except `cathedral`, `monastery`, `tobolsk`) was saved with its original `.jpg` extension, and Chrome, Firefox, and Edge don't render TIFF in an `<img>` tag — those panels will show as broken images for basically all your visitors even though the paths below are correct. Batch-convert those outputs to `.jpg` (script below) and re-upload, then send me the new file listing and I'll swap the extensions in one pass.
 
 Single-scale, brute-force alignment (window $[-15,15]$, metric computed on the middle 80% of each channel) run on the three low-resolution `.jpg` plates:
 
@@ -139,7 +139,7 @@ Single-scale, brute-force alignment (window $[-15,15]$, metric computed on the m
 
 ## Part 2: Multi-Scale Pyramid Alignment Results
 
-Pyramid alignment (per-level search windows of $[-15,16)$ at the coarsest scale and $[-3,4)$ at every finer scale) run on all 14 provided glass plates plus 3 additional plates chosen from the [Prokudin-Gorskii collection](https://www.loc.gov/collections/prokudin-gorskii/?st=grid). `cathedral`, `monastery`, and `tobolsk` are shown above in Part 1 — the pyramid algorithm converges to the same shifts on these since they're already low-resolution; the 11 full-size `.tif` scans below only became tractable with the pyramid.
+Pyramid alignment (per-level search windows of $[-15,16)$ at the coarsest scale and $[-3,4)$ at every finer scale) run on all 14 provided glass plates plus 3 additional plates chosen from the [Prokudin-Gorskii collection](https://www.loc.gov/collections/prokudin-gorskii/?st=grid). `cathedral`, `monastery`, and `tobolsk` are shown above in Part 1 — the pyramid algorithm converges to the same shifts on these since they're already low-resolution; the 11 full-size `.jpg` scans below only became tractable with the pyramid.
 
 > **Note on the numbers below:** the L2- and NCC-alignment shifts currently come out identical for every image. That's an artifact of how `align()` is wired up right now — it always scores candidate shifts with `l2()`, regardless of which output folder the result gets saved to — not a coincidence in the data. The images/shifts below are accurate for the L2 metric; to get genuine NCC numbers, `align()` needs a metric argument that actually dispatches to `ncc()` on the second pass.
 
@@ -147,15 +147,15 @@ Pyramid alignment (per-level search windows of $[-15,16)$ at the coarsest scale 
 
 <div style="display: flex; gap: 10px; margin-bottom: 6px;">
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/no_align/church_no_align.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/no_align/church_no_align.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">No Alignment</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/l2_given/church_proc_l2.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/l2_given/church_proc_l2.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">L2 Alignment<br>G: (25, 4)<br>R: (58, -4)</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/ncc_given/church_proc_ncc.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/ncc_given/church_proc_ncc.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">NCC Alignment<br>G: (25, 4)<br>R: (58, -4)</figcaption>
   </figure>
 </div>
@@ -163,15 +163,15 @@ Pyramid alignment (per-level search windows of $[-15,16)$ at the coarsest scale 
 
 <div style="display: flex; gap: 10px; margin-bottom: 6px;">
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/no_align/emir_no_align.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/no_align/emir_no_align.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">No Alignment</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/l2_given/emir_proc_l2.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/l2_given/emir_proc_l2.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">L2 Alignment<br>G: (49, 24)<br>R: (95, -249)</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/ncc_given/emir_proc_ncc.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/ncc_given/emir_proc_ncc.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">NCC Alignment<br>G: (49, 24)<br>R: (95, -249)</figcaption>
   </figure>
 </div>
@@ -179,15 +179,15 @@ Pyramid alignment (per-level search windows of $[-15,16)$ at the coarsest scale 
 
 <div style="display: flex; gap: 10px; margin-bottom: 6px;">
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/no_align/harvesters_no_align.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/no_align/harvesters_no_align.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">No Alignment</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/l2_given/harvesters_proc_l2.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/l2_given/harvesters_proc_l2.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">L2 Alignment<br>G: (59, 16)<br>R: (123, 13)</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/ncc_given/harvesters_proc_ncc.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/ncc_given/harvesters_proc_ncc.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">NCC Alignment<br>G: (59, 16)<br>R: (123, 13)</figcaption>
   </figure>
 </div>
@@ -195,15 +195,15 @@ Pyramid alignment (per-level search windows of $[-15,16)$ at the coarsest scale 
 
 <div style="display: flex; gap: 10px; margin-bottom: 6px;">
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/no_align/icon_no_align.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/no_align/icon_no_align.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">No Alignment</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/l2_given/icon_proc_l2.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/l2_given/icon_proc_l2.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">L2 Alignment<br>G: (41, 17)<br>R: (89, 23)</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/ncc_given/icon_proc_ncc.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/ncc_given/icon_proc_ncc.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">NCC Alignment<br>G: (41, 17)<br>R: (89, 23)</figcaption>
   </figure>
 </div>
@@ -211,15 +211,15 @@ Pyramid alignment (per-level search windows of $[-15,16)$ at the coarsest scale 
 
 <div style="display: flex; gap: 10px; margin-bottom: 6px;">
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/no_align/ilemselga_no_align.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/no_align/ilemselga_no_align.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">No Alignment</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/l2_given/ilemselga_proc_l2.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/l2_given/ilemselga_proc_l2.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">L2 Alignment<br>G: (40, 7)<br>R: (130, 11)</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/ncc_given/ilemselga_proc_ncc.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/ncc_given/ilemselga_proc_ncc.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">NCC Alignment<br>G: (40, 7)<br>R: (130, 11)</figcaption>
   </figure>
 </div>
@@ -227,15 +227,15 @@ Pyramid alignment (per-level search windows of $[-15,16)$ at the coarsest scale 
 
 <div style="display: flex; gap: 10px; margin-bottom: 6px;">
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/no_align/melons_no_align.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/no_align/melons_no_align.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">No Alignment</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/l2_given/melons_proc_l2.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/l2_given/melons_proc_l2.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">L2 Alignment<br>G: (81, 10)<br>R: (178, 13)</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/ncc_given/melons_proc_ncc.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/ncc_given/melons_proc_ncc.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">NCC Alignment<br>G: (81, 10)<br>R: (178, 13)</figcaption>
   </figure>
 </div>
@@ -243,15 +243,15 @@ Pyramid alignment (per-level search windows of $[-15,16)$ at the coarsest scale 
 
 <div style="display: flex; gap: 10px; margin-bottom: 6px;">
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/no_align/religous_painting_no_align.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/no_align/religous_painting_no_align.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">No Alignment</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/l2_given/religous_painting_proc_l2.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/l2_given/religous_painting_proc_l2.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">L2 Alignment<br>G: (27, 3)<br>R: (68, 7)</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/ncc_given/religous_painting_proc_ncc.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/ncc_given/religous_painting_proc_ncc.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">NCC Alignment<br>G: (27, 3)<br>R: (68, 7)</figcaption>
   </figure>
 </div>
@@ -259,15 +259,15 @@ Pyramid alignment (per-level search windows of $[-15,16)$ at the coarsest scale 
 
 <div style="display: flex; gap: 10px; margin-bottom: 6px;">
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/no_align/self_portrait_no_align.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/no_align/self_portrait_no_align.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">No Alignment</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/l2_given/self_portrait_proc_l2.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/l2_given/self_portrait_proc_l2.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">L2 Alignment<br>G: (78, 29)<br>R: (176, 37)</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/ncc_given/self_portrait_proc_ncc.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/ncc_given/self_portrait_proc_ncc.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">NCC Alignment<br>G: (78, 29)<br>R: (176, 37)</figcaption>
   </figure>
 </div>
@@ -275,15 +275,15 @@ Pyramid alignment (per-level search windows of $[-15,16)$ at the coarsest scale 
 
 <div style="display: flex; gap: 10px; margin-bottom: 6px;">
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/no_align/siren_no_align.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/no_align/siren_no_align.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">No Alignment</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/l2_given/siren_proc_l2.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/l2_given/siren_proc_l2.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">L2 Alignment<br>G: (49, -6)<br>R: (95, -25)</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/ncc_given/siren_proc_ncc.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/ncc_given/siren_proc_ncc.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">NCC Alignment<br>G: (49, -6)<br>R: (95, -25)</figcaption>
   </figure>
 </div>
@@ -291,15 +291,15 @@ Pyramid alignment (per-level search windows of $[-15,16)$ at the coarsest scale 
 
 <div style="display: flex; gap: 10px; margin-bottom: 6px;">
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/no_align/three_generations_no_align.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/no_align/three_generations_no_align.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">No Alignment</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/l2_given/three_generations_proc_l2.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/l2_given/three_generations_proc_l2.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">L2 Alignment<br>G: (53, 14)<br>R: (112, 11)</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/ncc_given/three_generations_proc_ncc.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/ncc_given/three_generations_proc_ncc.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">NCC Alignment<br>G: (53, 14)<br>R: (112, 11)</figcaption>
   </figure>
 </div>
@@ -307,15 +307,15 @@ Pyramid alignment (per-level search windows of $[-15,16)$ at the coarsest scale 
 
 <div style="display: flex; gap: 10px; margin-bottom: 6px;">
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/no_align/wharf_no_align.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/no_align/wharf_no_align.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">No Alignment</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/l2_given/wharf_proc_l2.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/l2_given/wharf_proc_l2.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">L2 Alignment<br>G: (15, -7)<br>R: (82, -16)</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/ncc_given/wharf_proc_ncc.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/ncc_given/wharf_proc_ncc.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">NCC Alignment<br>G: (15, -7)<br>R: (82, -16)</figcaption>
   </figure>
 </div>
@@ -327,15 +327,15 @@ Three additional plates chosen from the LoC's online Prokudin-Gorskii collection
 
 <div style="display: flex; gap: 10px; margin-bottom: 6px;">
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/no_align/bridge_no_align.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/no_align/bridge_no_align.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">No Alignment</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/l2_additional/bridge_proc_l2.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/l2_additional/bridge_proc_l2.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">L2 Alignment<br>G: (35, 0)<br>R: (124, -1)</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/ncc_additonal/bridge_proc_ncc.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/ncc_additonal/bridge_proc_ncc.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">NCC Alignment<br>G: (35, 0)<br>R: (124, -1)</figcaption>
   </figure>
 </div>
@@ -343,15 +343,15 @@ Three additional plates chosen from the LoC's online Prokudin-Gorskii collection
 
 <div style="display: flex; gap: 10px; margin-bottom: 6px;">
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/no_align/building1_no_align.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/no_align/building1_no_align.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">No Alignment</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/l2_additional/building1_proc_l2.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/l2_additional/building1_proc_l2.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">L2 Alignment<br>G: (32, -16)<br>R: (78, -25)</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/ncc_additonal/building1_proc_ncc.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/ncc_additonal/building1_proc_ncc.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">NCC Alignment<br>G: (32, -16)<br>R: (78, -25)</figcaption>
   </figure>
 </div>
@@ -359,15 +359,15 @@ Three additional plates chosen from the LoC's online Prokudin-Gorskii collection
 
 <div style="display: flex; gap: 10px; margin-bottom: 6px;">
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/no_align/lake_building_no_align.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/no_align/lake_building_no_align.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">No Alignment</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/l2_additional/lake_building_proc_l2.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/l2_additional/lake_building_proc_l2.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">L2 Alignment<br>G: (41, -16)<br>R: (92, -29)</figcaption>
   </figure>
   <figure style="width: 33%; margin: 0;">
-    <img src="/images/cs180/proj1/ncc_additonal/lake_building_proc_ncc.tif" style="width: 100%;">
+    <img src="/images/cs180/proj1/ncc_additonal/lake_building_proc_ncc.jpg" style="width: 100%;">
     <figcaption style="text-align: center;">NCC Alignment<br>G: (41, -16)<br>R: (92, -29)</figcaption>
   </figure>
 </div>
@@ -398,7 +398,7 @@ Three additional plates chosen from the LoC's online Prokudin-Gorskii collection
 ## Failure Case: The Emir of Bukhara
 
 <div style="text-align: center; margin-bottom: 6px;">
-  <img src="/images/cs180/proj1/no_align/emir_no_align.tif" style="width: 60%;">
+  <img src="/images/cs180/proj1/no_align/emir_no_align.jpg" style="width: 60%;">
 </div>
 
 The Emir of Bukhara is the standard example of an image where simple pixel-based alignment struggles, and it's worth explaining *why* rather than just noting that it fails. The Emir is photographed wearing an elaborately patterned robe that is strongly blue. Because blue dominates so much of the frame, the blue-channel exposure of the robe looks very different in brightness and texture from how the same robe appears in the green and red exposures — the whole premise of L2 and NCC is that corresponding regions should have *similar* pixel values (L2) or vary *together* around their mean (NCC) across channels, and a region that is bright in one channel's filter response but comparatively flat or dark in another's breaks that assumption. The metric ends up chasing a shift that best matches the robe's high-contrast folds against unrelated structure elsewhere in the frame, rather than truly registering the three exposures, so the alignment search can converge on the wrong displacement. This is exactly the scenario the assignment calls out: the two channels being compared don't actually share the same brightness statistics, so a smarter metric or feature representation (e.g., aligning on gradients/edges instead of raw intensities) is needed to do better here.
