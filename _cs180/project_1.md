@@ -368,7 +368,7 @@ Three additional plates chosen from the LoC's online Prokudin-Gorskii collection
 
 ### Offsets Summary
 
-| Image | L2: G (dy, dx) | L2: R (dy, dx) | NCC: G (dy, dx) | NCC: R (dy, dx) | Notes |
+| Image | L2: G (dy, dx) | L2: R (dy, dx) | NCC: G (dy, dx) | NCC: R (dy, dx) |
 |---|---|---|---|---|---|
 | cathedral | (5, 2) | (12, 3) | (5, 2) | (12, 3) |
 | monastery | (-3, 2) | (3, 2) | (-3, 2) | (3, 2) |
