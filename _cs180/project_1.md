@@ -18,9 +18,9 @@ window.MathJax = {
 
 ## Overview
 
-The Russian photographer Sergei Mikhailovich Prokudin-Gorskii took these photographs across Russia from roughly 1905 to 1915, before the Russian Revolution and the fall of the Romanov dynasty. To produce a color image — at a time when only black-and-white photography existed — he photographed each scene three times through red, green, and blue filter plates. He photographed a wide variety of subjects: buildings, churches, waterfronts, and people, all under the Tsarist Russian Empire.
+The Russian photographer Sergei Mikhailovich Prokudin-Gorskii took these photographs across Russia from roughly 1905 to 1915, before the Russian Revolution and the fall of the Romanov dynasty. To produce a color image, at a time when only black-and-white photography existed, he photographed each scene three times through red, green, and blue filter plates. He photographed a wide variety of subjects: buildings, churches, waterfronts, and people, all under the Tsarist Russian Empire.
 
-The goal of this project is to take one of these digitized glass-plate scans — a single tall grayscale image with the blue, green, and red exposures stacked top to bottom — and reconstruct it as a single aligned color photograph. Because the three exposures were taken one after another rather than all at once, the plate as scanned doesn't line up: simply stacking the three channels as-is produces a blurry, color-fringed image, so each channel first has to be shifted back into registration with the others before they can be combined into one RGB image.
+The goal of this project is to take one of these digitized glass-plate scans, a single tall grayscale image with the blue, green, and red exposures stacked top to bottom, and reconstruct it as a single aligned color photograph. Because the three exposures were taken one after another rather than all at once, the plate as scanned doesn't line up: simply stacking the three channels as-is produces a blurry, color-fringed image, so each channel first has to be shifted back into registration with the others before they can be combined into one RGB image.
 
 ## Approach
 
@@ -51,13 +51,13 @@ $$
 NCC(A, B) = \hat{A} \cdot \hat{B} = \sum_{i,j} \hat{A}_{i,j} \hat{B}_{i,j}
 $$
 
-Higher is better here: a value close to $1$ means the two channels vary together almost perfectly. Where L2 penalizes raw brightness differences, NCC only cares about whether the two images vary *in the same direction* from their own mean — which makes it more forgiving of small exposure differences between channels, but (as discussed below) not immune to them.
+Higher is better here: a value close to $1$ means the two channels vary together almost perfectly. While L2 penalizes raw brightness differences, NCC cares about whether the two images vary in the same direction from their own mean. 
 
 To keep both metrics from being dominated by the mismatched, low-information borders of the scanned plate, the metric is only computed on the middle 80% of each channel (10% cropped from every edge) before scoring a candidate shift.
 
 ### Single-Scale (Brute-Force) Alignment
 
-The simplest way to find the best shift is exhaustive search: for every candidate displacement $(dx, dy)$ in a window, roll the comparison channel by that amount with `np.roll` and score it against the base channel, keeping whichever shift scores best. For the small `.jpg` plates (roughly a few hundred pixels tall), a window of $[-15, 15]$ in both $x$ and $y$ — 961 combinations — is cheap enough to brute-force directly and is used for the single-scale results below.
+The simplest way to find the best shift is exhaustive search: for every candidate displacement $(dx, dy)$ in a window, roll the comparison channel by that amount with `np.roll` and score it against the base channel, keeping whichever shift scores best. For the small `.jpg` plates (roughly a few hundred pixels tall), a window of $[-15, 15]$ in both $x$ and $y$, 961 combinations, is cheap enough to brute-force directly and is used for the single-scale results below.
 
 ### Multi-Scale (Pyramid) Alignment
 
@@ -370,23 +370,46 @@ Three additional plates chosen from the LoC's online Prokudin-Gorskii collection
 
 | Image | L2: G (dy, dx) | L2: R (dy, dx) | NCC: G (dy, dx) | NCC: R (dy, dx) | Notes |
 |---|---|---|---|---|---|
-| cathedral | (5, 2) | (12, 3) | (5, 2) | (12, 3) | |
-| monastery | (-3, 2) | (3, 2) | (-3, 2) | (3, 2) | |
-| tobolsk | (3, 3) | (6, 3) | (3, 3) | (6, 3) | |
-| church | (25, 4) | (58, -4) | (25, 4) | (58, -4) | |
-| emir | (49, 24) | (95, -249) | (49, 24) | (95, -249) | likely failure — see below |
-| harvesters | (59, 16) | (123, 13) | (59, 16) | (123, 13) | |
-| icon | (41, 17) | (89, 23) | (41, 17) | (89, 23) | |
-| ilemselga | (40, 7) | (130, 11) | (40, 7) | (130, 11) | |
-| melons | (81, 10) | (178, 13) | (81, 10) | (178, 13) | |
-| religous_painting | (27, 3) | (68, 7) | (27, 3) | (68, 7) | |
-| self_portrait | (78, 29) | (176, 37) | (78, 29) | (176, 37) | |
-| siren | (49, -6) | (95, -25) | (49, -6) | (95, -25) | |
-| three_generations | (53, 14) | (112, 11) | (53, 14) | (112, 11) | |
-| wharf | (15, -7) | (82, -16) | (15, -7) | (82, -16) | |
-| bridge (mine) | (35, 0) | (124, -1) | (35, 0) | (124, -1) | |
-| building1 (mine) | (32, -16) | (78, -25) | (32, -16) | (78, -25) | |
-| lake_building (mine) | (41, -16) | (92, -29) | (41, -16) | (92, -29) | |
+| cathedral | (5, 2) | (12, 3) | (5, 2) | (12, 3) |
+| monastery | (-3, 2) | (3, 2) | (-3, 2) | (3, 2) |
+| tobolsk | (3, 3) | (6, 3) | (3, 3) | (6, 3) |
+| church | (25, 4) | (58, -4) | (25, 4) | (58, -4) |
+| emir | (49, 24) | (95, -249) | (49, 24) | (95, -249) |
+| harvesters | (59, 16) | (123, 13) | (59, 16) | (123, 13)|
+| icon | (41, 17) | (89, 23) | (41, 17) | (89, 23) |
+| ilemselga | (40, 7) | (130, 11) | (40, 7) | (130, 11) |
+| melons | (81, 10) | (178, 13) | (81, 10) | (178, 13) |
+| religous_painting | (27, 3) | (68, 7) | (27, 3) | (68, 7) |
+| self_portrait | (78, 29) | (176, 37) | (78, 29) | (176, 37) |
+| siren | (49, -6) | (95, -25) | (49, -6) | (95, -25) |
+| three_generations | (53, 14) | (112, 11) | (53, 14) | (112, 11) |
+| wharf | (15, -7) | (82, -16) | (15, -7) | (82, -16) |
+| bridge (mine) | (35, 0) | (124, -1) | (35, 0) | (124, -1) |
+| building1 (mine) | (32, -16) | (78, -25) | (32, -16) | (78, -25) |
+| lake_building (mine) | (41, -16) | (92, -29) | (41, -16) | (92, -29) |
+
+
+### Why L2 and NCC Agree Here
+ 
+Every image in the table above lands on the exact same shift for both metrics. This is caused by using `np.roll` to apply candidate shifts.
+ 
+`np.roll` doesn't discard or introduce any pixels. It  relocates the same set of pixel values to different positions (wrapping the edge around). That means for every candidate shift, the rolled channel has the exact same mean and the exact same overall brightness/contrast as the original.
+ 
+That single fact collapses the two metrics into the same optimization problem. Expanding the squared L2 distance between the base channel $A$ and a shifted candidate $B$:
+ 
+$$
+\left\| A - B \right\|_2^2 = \|A\|^2 - 2(A \cdot B) + \|B\|^2
+$$
+ 
+Since $\|A\|^2$ never changes (it's the fixed base channel) and $\|B\|^2$ never changes across candidates (thanks to `np.roll` preserving it), both terms are constants during the search. Minimizing the squared distance is therefore the same as maximizing $A \cdot B$ alone, the raw dot product between the two channels.
+ 
+NCC is that same dot product rescaled by two more constants (the mean and norm used to normalize $A$ and $B$), so its argmax over candidate shifts lands on the same dot product to maximize. In short:
+ 
+$$
+\arg\min_{shift} \; L_2(A,B) \;=\; \arg\max_{shift} \; (A \cdot B) \;=\; \arg\max_{shift} \; NCC(A,B)
+$$
+ 
+In order to achieve a difference in L2 and NCC metrics, a real crop/slice is needed rather than a wraparound roll. L2 and NCC are always going to pick the same displacement, which is exactly what the table shows.
 
 ## Failure Case: The Emir of Bukhara
 
@@ -394,9 +417,7 @@ Three additional plates chosen from the LoC's online Prokudin-Gorskii collection
   <img src="/images/cs180/proj1/no_align/emir_no_align.jpg" style="width: 60%;">
 </div>
 
-The Emir of Bukhara is an example of an image where simple pixel-based alignment struggles. The Emir is photographed wearing an elaborately patterned robe that is strongly blue. Because blue dominates so much of the frame, the blue-channel exposure of the robe looks very different in brightness and texture from how the same robe appears in the green and red exposures — the whole premise of L2 and NCC is that corresponding regions should have similar pixel values (L2) or vary together around their mean (NCC) across channels, and a region that is bright in one channel's filter response but comparatively flat or dark in another's breaks that assumption. The metric ends up chasing a shift that best matches the robe's high-contrast folds against unrelated structure elsewhere in the frame, rather than truly registering the three exposures, so the alignment search can converge on the wrong displacement. This is exactly the scenario the assignment calls out: the two channels being compared don't actually share the same brightness statistics, so a smarter metric or feature representation (e.g., aligning on gradients/edges instead of raw intensities) is needed to do better here.
-
-The computed shift backs this up: red comes out at $(dy, dx) = (95, -249)$ — an *x*-displacement roughly 10–20× larger in magnitude than any other image in the set. That's a strong sign the search converged on a spurious match rather than the true registration, which makes Emir the most likely candidate for the one alignment failure the rubric allows.
+The Emir of Bukhara is an example of an image where simple pixel-based alignment struggles. The Emir is photographed wearing an elaborately patterned robe that is strongly blue. Because blue dominates so much of the frame, the blue-channel exposure of the robe looks very different in brightness and texture from how the same robe appears in the green and red exposures. The pre-condition of L2 and NCC is that the corresponding regions should have similar pixel values (L2) or vary together around their mean (NCC) across channels. A region that is bright in one channel but dark in another channel breaks that assumption. The metric ends up chasing a shift that best matches the robe's high-contrast folds against unrelated structure elsewhere in the frame, rather than aligning the three channels. The alignment search can converge on the wrong displacement. This is caused by the two channels being compared one being too bright and the othe being too dark. 
 
 ## Mistakes and Detours
 
