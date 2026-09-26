@@ -11,7 +11,7 @@ author_profile: true
 - **COMPSCI 180**: Intro to Computer Vision and Computational Photography   
 - **EECS C106A**: Introduction to Robotics 
 - **ELENG 198**: Micromouse
-- **EE 290-13**: Advanced Brain Imaging Methods 
+- **ELENG 290-13**: Advanced Brain Imaging Methods 
 
 ### Spring 2026
 - **BIOENG 121L**: BioMEMS and BioNanotechnology Laboratory
