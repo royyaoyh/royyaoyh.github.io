@@ -64,7 +64,7 @@ $$
 
 where $I$ is the image, $K$ is the filter, and $O$ is the output. The filter is flipped before applying the operation because convolution, under the strict mathematical convention, requires reversing the kernel in both dimensions.
 
-<details class="p2-code" markdown="1">
+<details class="p2-code" open markdown="1">
 <summary><strong>Code: 4-loop convolution</strong></summary>
 
 ```python
@@ -117,7 +117,7 @@ $$
 
 where $K'$ is the flipped kernel. With zero padding, the part of the kernel outside the image is equivalent to multiplying by zeros.
 
-<details class="p2-code" markdown="1">
+<details class="p2-code" open markdown="1">
 <summary><strong>Code: 2-loop convolution</strong></summary>
 
 ```python
@@ -622,15 +622,15 @@ This criterion is based on the expected viewing distance. At close range, the fi
 <div class="p2-grid c4">
   <figure>
     <img src="/images/cs180/proj2/image/Part_2_2/lian_headshot.png" alt="Lian" loading="lazy">
-    <figcaption>Azuma Seren VTuber</figcaption>
+    <figcaption><a href="https://space.bilibili.com/1437582453" target="_blank" rel="noopener">Azuma Seren</a> VTuber</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/image/Part_2_2/taffy_headshot.png" alt="Taffy" loading="lazy">
-    <figcaption>Ace Taffy VTuber</figcaption>
+    <figcaption><a href="https://space.bilibili.com/1265680561" target="_blank" rel="noopener">Ace Taffy</a> VTuber</figcaption>
   </figure>
   <figure class="w2">
     <img src="/images/cs180/proj2/output/Part_2_2/taffy_lian.png" alt="Taffy + Lian hybrid" loading="lazy">
-    <figcaption>Ace Taffy + Azuma Seren Hybrid</figcaption>
+    <figcaption><a href="https://space.bilibili.com/1265680561" target="_blank" rel="noopener">Ace Taffy</a> + <a href="https://space.bilibili.com/1437582453" target="_blank" rel="noopener">Azuma Seren</a> Hybrid</figcaption>
   </figure>
 </div>
 
@@ -653,27 +653,27 @@ These examples demonstrate how changing the input pair changes the visual effect
 
 #### Full frequency analysis example
 
-I use the Azuma Seren/Taffy pair as the main worked example because it has the largest set of intermediate results: the aligned inputs, their Fourier magnitudes, and the spectra of the high-pass, low-pass, and hybrid images.
+I use the <a href="https://space.bilibili.com/1437582453" target="_blank" rel="noopener">Azuma Seren</a>/<a href="https://space.bilibili.com/1265680561" target="_blank" rel="noopener">Taffy</a> pair as the main worked example because it has the largest set of intermediate results: the aligned inputs, their Fourier magnitudes, and the spectra of the high-pass, low-pass, and hybrid images.
 
 <div class="p2-grid c2 narrow">
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_2/aligned_lian.png" alt="Aligned Azuma Seren" loading="lazy">
-    <figcaption>Aligned Azuma Seren</figcaption>
+    <figcaption>Aligned <a href="https://space.bilibili.com/1437582453" target="_blank" rel="noopener">Azuma Seren</a></figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_2/aligned_taffy.png" alt="Aligned Ace Taffy" loading="lazy">
-    <figcaption>Aligned Ace Taffy</figcaption>
+    <figcaption>Aligned <a href="https://space.bilibili.com/1265680561" target="_blank" rel="noopener">Ace Taffy</a></figcaption>
   </figure>
 </div>
 
 <div class="p2-grid c2 narrow">
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/lian.png" alt="Lian Fourier magnitude" loading="lazy">
-    <figcaption>Azuma Seren Fourier magnitude</figcaption>
+    <figcaption><a href="https://space.bilibili.com/1437582453" target="_blank" rel="noopener">Azuma Seren</a> Fourier magnitude</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/taffy.png" alt="Taffy Fourier magnitude" loading="lazy">
-    <figcaption>Ace Taffy Fourier magnitude</figcaption>
+    <figcaption><a href="https://space.bilibili.com/1265680561" target="_blank" rel="noopener">Ace Taffy</a> Fourier magnitude</figcaption>
   </figure>
 </div>
 
@@ -781,14 +781,25 @@ The Oraple is the classic demonstration because the straight seam can be made vi
 
 #### Custom blend 1: Half-peeled shrimp
 
-<div class="p2-grid c2 medium">
+<div class="p2-grid c3">
   <figure>
-    <img src="/images/cs180/proj2/output/Part_2_4/half_peeled_shrimp.jpeg" alt="Half-peeled shrimp blend" loading="lazy">
-    <figcaption>Shrimp + Lobster Blend</figcaption>
+    <img src="/images/cs180/proj2/image/Part_2_4/peel.jpg" alt="Peeled shrimp" loading="lazy">
+    <figcaption>Peeled Crawfish</figcaption>
   </figure>
   <figure>
-    <img src="/images/cs180/proj2/output/Part_2_4/half_peeled_shrimp.png" alt="Half-peeled shrimp blend, alternate output" loading="lazy">
-    <figcaption>Shrimp + Lobster Stack</figcaption>
+    <img src="/images/cs180/proj2/image/Part_2_4/unpeel.jpg" alt="Unpeeled shrimp" loading="lazy">
+    <figcaption>Unpeeled Shrimp</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_4/half_peeled_shrimp.jpeg" alt="Half-peeled shrimp blend" loading="lazy">
+    <figcaption>Shrimp + Crawfish Blend</figcaption>
+  </figure>
+</div>
+
+<div class="p2-grid c1 medium">
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_4/half_peeled_shrimp.png" alt="Half-peeled shrimp blend, stacks" loading="lazy">
+    <figcaption>Shrimp + Crawfish Stack</figcaption>
   </figure>
 </div>
 
@@ -796,14 +807,25 @@ This example shows how the same multiresolution blending idea can be used outsid
 
 #### Custom blend 2: Hamster + Dafu
 
-<div class="p2-grid c2 medium">
+<div class="p2-grid c3">
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_2_4/dafu.jpg" alt="Daifuku" loading="lazy">
+    <figcaption>Daifuku</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_2_4/hamster.jpg" alt="Hamster" loading="lazy">
+    <figcaption>Hamster</figcaption>
+  </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_4/hamster_dafu.jpeg" alt="Hamster + Dafu blend" loading="lazy">
     <figcaption>Hamster + Daifuku Blend</figcaption>
   </figure>
+</div>
+
+<div class="p2-grid c1 medium">
   <figure>
-    <img src="/images/cs180/proj2/output/Part_2_4/hamster_dafu.png" alt="Hamster + Daifuku Blend, alternate output" loading="lazy">
-    <figcaption>Hamster + Dafu blend</figcaption>
+    <img src="/images/cs180/proj2/output/Part_2_4/hamster_dafu.png" alt="Hamster + Dafu blend, stacks" loading="lazy">
+    <figcaption>Hamster + Dafu Stack</figcaption>
   </figure>
 </div>
 
@@ -831,7 +853,12 @@ What I amazed me the most about is the concept about breaking an image into a fr
 
 The most important connection for me was seeing the same idea appear repeatedly across the entire project. Derivatives emphasize changes, Gaussian filters remove high frequencies, Laplacian differences isolate frequency bands, and multiresolution blending combines those bands in a controlled way. What initially looked like several unrelated image-processing tricks turned out to be different uses of the same underlying idea: separating and manipulating spatial frequencies.
 
-## Image Sources
+## Credits
+
+Sources for the VTuber hybrid images:
+
+- [Ace Taffy](https://space.bilibili.com/1265680561)
+- [Azuma Seren](https://space.bilibili.com/1437582453)
 
 Sources for the custom blend images:
 
