@@ -900,6 +900,12 @@ The output images also show that multiresolution blending is more than simply av
 What I amazed me the most about is the concept about breaking an image into a frequency domain. I always think of only 2d signals being able to break into frequency domain. Seeings how human eyes is able to depict high frequency (fine details) and low frequency (general shape) really fascinates me.
 
 The most important connection for me was seeing the same idea appear repeatedly across the entire project. Derivatives emphasize changes, Gaussian filters remove high frequencies, Laplacian differences isolate frequency bands, and multiresolution blending combines those bands in a controlled way. What initially looked like several unrelated image-processing tricks turned out to be different uses of the same underlying idea: separating and manipulating spatial frequencies.
+<div class="p2-grid c1" style="max-width: 50%">
+  <figure>
+    <img src="/images/cs180/proj2/image/cute.jpg" alt="hamster with daifuku" loading="lazy">
+    <figcaption>My hamster + daifuku image blending inspiration</figcaption>
+  </figure>
+</div>
 
 ## Credits
 
