@@ -473,11 +473,11 @@ As the sharpening amount increases from $\alpha=0.5$ to $\alpha=5$, the high-fre
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/supplement/taj_blur.jpg" alt="Taj, Gaussian blurred" loading="lazy">
-    <figcaption>Taj, Gaussian blurred</figcaption>
+    <figcaption>Taj, Gaussian Blurred</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/supplement/taj_high_freq.jpg" alt="Taj, high-frequency component" loading="lazy">
-    <figcaption>Taj, high-frequency component</figcaption>
+    <figcaption>Taj, High-frequency Component</figcaption>
   </figure>
 </div>
 
@@ -486,15 +486,15 @@ As the sharpening amount increases from $\alpha=0.5$ to $\alpha=5$, the high-fre
 <div class="p2-grid c3">
   <figure>
     <img src="/images/cs180/proj2/image/Part_2_1/lobos.jpg" alt="Original" loading="lazy">
-    <figcaption>Original</figcaption>
+    <figcaption>Point Lobos: Original</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_1/lobos_blur_5.jpg" alt="Blurred, then sharpened" loading="lazy">
-    <figcaption>Blurred, then sharpened</figcaption>
+    <figcaption>Point Lobos: Blurred, Then Sharpened</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_1/lobos_5.jpg" alt="Sharpened" loading="lazy">
-    <figcaption>Sharpened</figcaption>
+    <figcaption>Point Lobos: Sharpened</figcaption>
   </figure>
 </div>
 
@@ -514,28 +514,28 @@ Because the sharpening equation can produce values below $0$ or above $1$, the r
 
 <div class="p2-grid c2 medium">
   <figure>
-    <img src="/images/cs180/proj2/image/Part_2_1/calacademy.jpg" alt="CalAcademy: original" loading="lazy">
-    <figcaption>CalAcademy: original</figcaption>
+    <img src="/images/cs180/proj2/image/Part_2_1/calacademy.jpg" alt="California Academy of Sciences: Original" loading="lazy">
+    <figcaption>California Academy of Sciences: Original</figcaption>
   </figure>
   <figure>
-    <img src="/images/cs180/proj2/output/Part_2_1/calacademy_5.jpg" alt="CalAcademy: sharpened" loading="lazy">
-    <figcaption>CalAcademy: sharpened</figcaption>
+    <img src="/images/cs180/proj2/output/Part_2_1/calacademy_5.jpg" alt="California Academy of Sciences: Sharpened" loading="lazy">
+    <figcaption>California Academy of Sciences: Sharpened</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/image/Part_2_1/redwood.jpg" alt="Redwood: original" loading="lazy">
-    <figcaption>Redwood: original</figcaption>
+    <figcaption>Henry Cowell Redwoods State Park: Original</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_1/redwood_5.jpg" alt="Redwood: sharpened" loading="lazy">
-    <figcaption>Redwood: sharpened</figcaption>
+    <figcaption>Henry Cowell Redwoods State Park: Sharpened</figcaption>
   </figure>
   <figure>
-    <img src="/images/cs180/proj2/image/Part_2_1/yosemite.jpg" alt="Yosemite: original" loading="lazy">
-    <figcaption>Yosemite: original</figcaption>
+    <img src="/images/cs180/proj2/image/Part_2_1/yosemite.jpg" alt="Yosemite National Park: Original" loading="lazy">
+    <figcaption>Yosemite National Park: Original</figcaption>
   </figure>
   <figure>
-    <img src="/images/cs180/proj2/output/Part_2_1/yosemite_5.jpg" alt="Yosemite: sharpened" loading="lazy">
-    <figcaption>Yosemite: sharpened</figcaption>
+    <img src="/images/cs180/proj2/output/Part_2_1/yosemite_5.jpg" alt="Yosemite National Park: Sharpened" loading="lazy">
+    <figcaption>Yosemite National Park: Sharpened</figcaption>
   </figure>
 </div>
 
@@ -593,54 +593,54 @@ This criterion is based on the expected viewing distance. At close range, the fi
 <div class="p2-grid c4">
   <figure>
     <img src="/images/cs180/proj2/image/Part_2_2/cat.jpg" alt="Cat input" loading="lazy">
-    <figcaption>Cat input</figcaption>
+    <figcaption>Cat</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/image/Part_2_2/man.jpg" alt="Man input" loading="lazy">
-    <figcaption>Man input</figcaption>
+    <figcaption>Man</figcaption>
   </figure>
   <figure class="w2">
     <img src="/images/cs180/proj2/output/Part_2_2/catman.png" alt="Cat + man hybrid" loading="lazy">
-    <figcaption>Cat + man hybrid</figcaption>
+    <figcaption>Cat + Man Hybrid</figcaption>
   </figure>
 </div>
 
-<p class="p2-cap">Hybrid result for the cat/man pair</p>
+<p class="p2-cap">Hybrid Result For the Cat/Man Pair</p>
 
 <div class="p2-grid c4">
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_2/seal.png" alt="Seal" loading="lazy">
-    <figcaption>Seal</figcaption>
+    <figcaption>Bagua Diagram</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_2/bagua.png" alt="Bagua" loading="lazy">
-    <figcaption>Bagua</figcaption>
+    <figcaption>Berkeley Seal</figcaption>
   </figure>
   <figure class="w2">
-    <img src="/images/cs180/proj2/output/Part_2_2/seal_bagua.png" alt="Seal + Bagua hybrid" loading="lazy">
-    <figcaption>Seal + Bagua hybrid</figcaption>
+    <img src="/images/cs180/proj2/output/Part_2_2/seal_bagua.png" alt="Seal + Bagua Diahybrid" loading="lazy">
+    <figcaption>Berkeley Seal + Bagua Digram Hybrid</figcaption>
   </figure>
 </div>
 
 <div class="p2-grid c4">
   <figure>
     <img src="/images/cs180/proj2/image/Part_2_2/lian_headshot.png" alt="Lian" loading="lazy">
-    <figcaption>Lian</figcaption>
+    <figcaption>Seren VTuber</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/image/Part_2_2/taffy_headshot.png" alt="Taffy" loading="lazy">
-    <figcaption>Taffy</figcaption>
+    <figcaption>Taffy VTuber</figcaption>
   </figure>
   <figure class="w2">
     <img src="/images/cs180/proj2/output/Part_2_2/taffy_lian.png" alt="Taffy + Lian hybrid" loading="lazy">
-    <figcaption>Taffy + Lian hybrid</figcaption>
+    <figcaption>Taffy + Seren Hybrid</figcaption>
   </figure>
 </div>
 
 <div class="p2-grid c4">
   <figure>
     <img src="/images/cs180/proj2/image/Part_2_2/hu_ge.png" alt="Hu Ge" loading="lazy">
-    <figcaption>Hu Ge</figcaption>
+    <figcaption>Brother Tiger</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/image/Part_2_2/pig.png" alt="Pig" loading="lazy">
@@ -648,7 +648,7 @@ This criterion is based on the expected viewing distance. At close range, the fi
   </figure>
   <figure class="w2">
     <img src="/images/cs180/proj2/output/Part_2_2/hu_pig.png" alt="Hu Ge + pig hybrid" loading="lazy">
-    <figcaption>Hu Ge + pig hybrid</figcaption>
+    <figcaption>Brother Tiger + Pig Hybrid</figcaption>
   </figure>
 </div>
 
@@ -778,7 +778,7 @@ The first idea makes the effective blur scale grow with the level, so the coarse
 <div class="p2-grid c1" style="max-width: 50%">
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_3/oraple.jpeg" alt="Apple + orange multiresolution blend" loading="lazy">
-    <figcaption>Apple + orange multiresolution blend</figcaption>
+    <figcaption>Apple + Orange Multiresolution Blend</figcaption>
   </figure>
 </div>
 
@@ -789,11 +789,11 @@ The Oraple is the classic demonstration because the straight seam can be made vi
 <div class="p2-grid c2 medium">
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_4/half_peeled_shrimp.jpeg" alt="Half-peeled shrimp blend" loading="lazy">
-    <figcaption>Half-peeled shrimp blend</figcaption>
+    <figcaption>Shrimp + Lobster Blend</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_4/half_peeled_shrimp.png" alt="Half-peeled shrimp blend, alternate output" loading="lazy">
-    <figcaption>Half-peeled shrimp blend, alternate output</figcaption>
+    <figcaption>Shrimp + Lobster Blend, alternate output</figcaption>
   </figure>
 </div>
 
@@ -804,10 +804,10 @@ This example shows how the same multiresolution blending idea can be used outsid
 <div class="p2-grid c2 medium">
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_4/hamster_dafu.jpeg" alt="Hamster + Dafu blend" loading="lazy">
-    <figcaption>Hamster + Dafu blend</figcaption>
+    <figcaption>Hamster + Daifuku Blend</figcaption>
   </figure>
   <figure>
-    <img src="/images/cs180/proj2/output/Part_2_4/hamster_dafu.png" alt="Hamster + Dafu blend, alternate output" loading="lazy">
+    <img src="/images/cs180/proj2/output/Part_2_4/hamster_dafu.png" alt="Hamster + Daifuku Blend, alternate output" loading="lazy">
     <figcaption>Hamster + Dafu blend, alternate output</figcaption>
   </figure>
 </div>
