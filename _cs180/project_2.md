@@ -18,27 +18,28 @@ window.MathJax = {
 
 <style>
 /* ---- Project 2 page styles (scoped with p2- prefixes) ---- */
-.page__content h3, article h3 { font-size: 1.45em; margin-top: 2em; }
-.page__content h4, article h4 { font-size: 1.2em; margin-top: 1.6em; }
+.page__content h2, article h2 { font-size: 1.9em !important; }
+.page__content h3, article h3 { font-size: 1.5em !important; margin-top: 2em; }
+.page__content h4, article h4 { font-size: 1.2em !important; margin-top: 1.6em; }
 .p2-grid { --n: 3; --g: 14px; display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: var(--g); margin: 1.4em auto 0.6em; }
 .p2-grid figure { display: block; margin: 0; min-width: 0; text-align: center; flex: 0 0 calc((100% - (var(--n) - 1) * var(--g)) / var(--n)); }
 .p2-grid figure.w2 { flex-basis: calc(2 * (100% - (var(--n) - 1) * var(--g)) / var(--n) + var(--g)); }
 .p2-grid img { display: block; width: 100%; height: auto; margin: 0; border-radius: 3px; }
-.p2-grid figcaption { margin: 0.45em 0 0; font-size: 0.85em; font-style: italic; line-height: 1.35; color: #555; text-align: center; }
+.p2-grid figcaption { margin: 0.45em 0 0; font-size: 0.85em; font-style: italic; line-height: 1.35; color: inherit; opacity: 0.85; text-align: center; }
 .p2-grid.c1 { --n: 1; }
 .p2-grid.c2 { --n: 2; }
 .p2-grid.c3 { --n: 3; }
 .p2-grid.c4 { --n: 4; }
 .p2-grid.narrow { max-width: 640px; }
 .p2-grid.medium { max-width: 820px; }
-.p2-cap { text-align: center; font-style: italic; font-size: 0.9em; color: #555; margin: 0.2em 0 1.6em; }
+.p2-cap { text-align: center; font-style: italic; font-size: 0.9em; color: inherit; opacity: 0.85; margin: 0.2em 0 1.6em; }
 .p2-table { width: auto !important; display: table !important; margin: 1em auto 1.4em !important; border-collapse: collapse; }
 .p2-table th, .p2-table td { text-align: center !important; padding: 0.45em 1.8em; white-space: nowrap; }
-.p2-note { border-left: 4px solid #6f97c9; background: #f4f7fb; padding: 0.7em 1.1em; margin: 1.4em 0; border-radius: 0 4px 4px 0; }
+.p2-note { color: inherit; border-left: 4px solid #6f97c9; background: rgba(111, 151, 201, 0.14); padding: 0.7em 1.1em; margin: 1.4em 0; border-radius: 0 4px 4px 0; }
 .p2-note p:last-child, .p2-note ol:last-child { margin-bottom: 0; }
 .p2-note ol { margin-top: 0.4em; }
-details.p2-code { margin: 1.2em 0; padding: 0.5em 1em; border: 1px solid #e2e2e2; border-radius: 6px; background: #fafafa; }
-details.p2-code summary { cursor: pointer; }
+details.p2-code { margin: 1.2em 0; padding: 0.5em 1em; border: 1px solid rgba(128, 128, 128, 0.4); border-radius: 6px; background: rgba(128, 128, 128, 0.08); color: inherit; }
+details.p2-code summary { cursor: pointer; color: inherit; }
 @media (max-width: 560px) { .p2-grid.c3, .p2-grid.c4 { --n: 2; } }
 </style>
 
@@ -129,7 +130,7 @@ The library implementation is dramatically faster, with an average of about $0.0
 
 <div class="p2-grid c4">
   <figure>
-    <img src="/images/cs180/proj2/image/Part_1_1/me_gray.jpg" alt="Input grayscale image" loading="lazy">
+    <img src="/images/cs180/proj2/image/me_gray.jpg" alt="Input grayscale image" loading="lazy">
     <figcaption>Input grayscale image</figcaption>
   </figure>
   <figure>
@@ -602,6 +603,21 @@ This criterion is based on the expected viewing distance. At close range, the fi
 
 <div class="p2-grid c4">
   <figure>
+    <img src="/images/cs180/proj2/output/Part_2_2/seal.png" alt="Seal" loading="lazy">
+    <figcaption>Seal</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_2/bagua.png" alt="Bagua" loading="lazy">
+    <figcaption>Bagua</figcaption>
+  </figure>
+  <figure class="w2">
+    <img src="/images/cs180/proj2/output/Part_2_2/seal_bagua.png" alt="Seal + Bagua hybrid" loading="lazy">
+    <figcaption>Seal + Bagua hybrid</figcaption>
+  </figure>
+</div>
+
+<div class="p2-grid c4">
+  <figure>
     <img src="/images/cs180/proj2/image/Part_2_2/lian_headshot.png" alt="Lian" loading="lazy">
     <figcaption>Lian</figcaption>
   </figure>
@@ -647,7 +663,7 @@ I use the Lian/Taffy pair as the main worked example because it has the largest 
   </figure>
 </div>
 
-<div class="p2-grid c3">
+<div class="p2-grid c2 narrow">
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/lian.png" alt="Lian Fourier magnitude" loading="lazy">
     <figcaption>Lian Fourier magnitude</figcaption>
@@ -656,13 +672,13 @@ I use the Lian/Taffy pair as the main worked example because it has the largest 
     <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/taffy.png" alt="Taffy Fourier magnitude" loading="lazy">
     <figcaption>Taffy Fourier magnitude</figcaption>
   </figure>
+</div>
+
+<div class="p2-grid c3">
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/high.png" alt="High-frequency spectrum" loading="lazy">
     <figcaption>High-frequency spectrum</figcaption>
   </figure>
-</div>
-
-<div class="p2-grid c3">
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/low.png" alt="Low-frequency spectrum" loading="lazy">
     <figcaption>Low-frequency spectrum</figcaption>
@@ -753,7 +769,7 @@ The first idea makes the effective blur scale grow with the level, so the coarse
 
 #### Oraple
 
-<div class="p2-grid c1" style="max-width: 560px">
+<div class="p2-grid c1" style="max-width: 50%">
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_3/oraple.jpeg" alt="Apple + orange multiresolution blend" loading="lazy">
     <figcaption>Apple + orange multiresolution blend</figcaption>
