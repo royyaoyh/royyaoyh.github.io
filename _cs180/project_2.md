@@ -218,19 +218,19 @@ The library implementation is dramatically faster, with an average of about $0.0
 <div class="p2-grid c4">
   <figure>
     <img src="/images/cs180/proj2/image/me_grayscale.jpg" alt="Input grayscale image" loading="lazy">
-    <figcaption>Input grayscale image</figcaption>
+    <figcaption>Me at Chinatown</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_1/me_gray_box.jpg" alt="9×9 box filter" loading="lazy">
-    <figcaption>9×9 box filter</figcaption>
+    <figcaption>9×9 Box Filter</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_1/me_gray_hor.jpg" alt="Horizontal derivative" loading="lazy">
-    <figcaption>Horizontal derivative</figcaption>
+    <figcaption>Horizontal Derivative</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_1/me_gray_ver.jpg" alt="Vertical derivative" loading="lazy">
-    <figcaption>Vertical derivative</figcaption>
+    <figcaption>Vertical Derivative</figcaption>
   </figure>
 </div>
 
@@ -264,19 +264,19 @@ I used `im = np.hypot(ver, hor)` to get the magnitude of the horizontal and vert
 <div class="p2-grid c2 narrow">
   <figure>
     <img src="/images/cs180/proj2/output/supplement/cameraman_hor.png" alt="D_x: horizontal derivative" loading="lazy">
-    <figcaption>$D_x$: horizontal derivative</figcaption>
+    <figcaption>$D_x$: Horizontal Derivative</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/supplement/cameraman_ver.png" alt="D_y: vertical derivative" loading="lazy">
-    <figcaption>$D_y$: vertical derivative</figcaption>
+    <figcaption>$D_y$: Vertical Derivative</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_2/cameraman_raw_edge.png" alt="Gradient magnitude before thresholding" loading="lazy">
-    <figcaption>Gradient magnitude before thresholding</figcaption>
+    <figcaption>Gradient Magnitude Before Thresholding</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_2/cameraman_thres.png" alt="Binarized edge image" loading="lazy">
-    <figcaption>Binarized edge image</figcaption>
+    <figcaption>Binarized Edge Image</figcaption>
   </figure>
 </div>
 
@@ -313,11 +313,11 @@ The threshold is a qualitative tradeoff. A threshold that is too low keeps small
 <div class="p2-grid c2 narrow">
   <figure>
     <img src="/images/cs180/proj2/output/supplement/cameraman_gauss_thres.png" alt="Binarized gradient magnitude after Gaussian smoothing" loading="lazy">
-    <figcaption>Binarized gradient magnitude after Gaussian smoothing</figcaption>
+    <figcaption>Binarized Gradient Magnitude After Gaussian Smoothing</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_2/cameraman_thres.png" alt="Finite-difference binarized edge image" loading="lazy">
-    <figcaption>Finite-difference binarized edge image</figcaption>
+    <figcaption>Finite-difference Binarized Edge Image</figcaption>
   </figure>
 </div>
 
@@ -359,30 +359,27 @@ Therefore, instead of first blurring the image and then applying the derivative,
 <div class="p2-grid c2 narrow">
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss_filtered_hor.png" alt="Gaussian + horizontal derivative" loading="lazy">
-    <figcaption>Gaussian + horizontal derivative</figcaption>
+    <figcaption>Gaussian + Horizontal Derivative</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss_filtered_ver.png" alt="Gaussian + vertical derivative" loading="lazy">
-    <figcaption>Gaussian + vertical derivative</figcaption>
+    <figcaption>Gaussian + Vertical Derivative</figcaption>
   </figure>
-  <figure>
-    <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss.png" alt="Gaussian-smoothed cameraman" loading="lazy">
-    <figcaption>Gaussian-smoothed cameraman</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss_filtered_filter.png" alt="Gradient magnitude from the DoG filters" loading="lazy">
-    <figcaption>Gradient magnitude from the DoG filters</figcaption>
-  </figure>
-</div>
-
-<div class="p2-grid c2 narrow">
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_3/gauss_hor_kernal.png" alt="Horizontal DoG filter" loading="lazy">
-    <figcaption>Horizontal DoG filter</figcaption>
+    <figcaption>Horizontal DoG Filter</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_3/gauss_ver_kernal.png" alt="Vertical DoG filter" loading="lazy">
-    <figcaption>Vertical DoG filter</figcaption>
+    <figcaption>Vertical DoG Filter</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss.png" alt="Gaussian-smoothed cameraman" loading="lazy">
+    <figcaption>Gaussian-smoothed Cameraman</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss_filtered_filter.png" alt="Gradient magnitude from the DoG filters" loading="lazy">
+    <figcaption>Gradient Magnitude from the DoG filters</figcaption>
   </figure>
 </div>
 
@@ -625,15 +622,15 @@ This criterion is based on the expected viewing distance. At close range, the fi
 <div class="p2-grid c4">
   <figure>
     <img src="/images/cs180/proj2/image/Part_2_2/lian_headshot.png" alt="Lian" loading="lazy">
-    <figcaption>Seren VTuber</figcaption>
+    <figcaption>Azuma Seren VTuber</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/image/Part_2_2/taffy_headshot.png" alt="Taffy" loading="lazy">
-    <figcaption>Taffy VTuber</figcaption>
+    <figcaption>Ace Taffy VTuber</figcaption>
   </figure>
   <figure class="w2">
     <img src="/images/cs180/proj2/output/Part_2_2/taffy_lian.png" alt="Taffy + Lian hybrid" loading="lazy">
-    <figcaption>Taffy + Seren Hybrid</figcaption>
+    <figcaption>Ace Taffy + Azuma Seren Hybrid</figcaption>
   </figure>
 </div>
 
@@ -656,27 +653,27 @@ These examples demonstrate how changing the input pair changes the visual effect
 
 #### Full frequency analysis example
 
-I use the Lian/Taffy pair as the main worked example because it has the largest set of intermediate results: the aligned inputs, their Fourier magnitudes, and the spectra of the high-pass, low-pass, and hybrid images.
+I use the Azuma Seren/Taffy pair as the main worked example because it has the largest set of intermediate results: the aligned inputs, their Fourier magnitudes, and the spectra of the high-pass, low-pass, and hybrid images.
 
 <div class="p2-grid c2 narrow">
   <figure>
-    <img src="/images/cs180/proj2/output/Part_2_2/aligned_lian.png" alt="Aligned Lian" loading="lazy">
-    <figcaption>Aligned Lian</figcaption>
+    <img src="/images/cs180/proj2/output/Part_2_2/aligned_lian.png" alt="Aligned Azuma Seren" loading="lazy">
+    <figcaption>Aligned Azuma Seren</figcaption>
   </figure>
   <figure>
-    <img src="/images/cs180/proj2/output/Part_2_2/aligned_taffy.png" alt="Aligned Taffy" loading="lazy">
-    <figcaption>Aligned Taffy</figcaption>
+    <img src="/images/cs180/proj2/output/Part_2_2/aligned_taffy.png" alt="Aligned Ace Taffy" loading="lazy">
+    <figcaption>Aligned Ace Taffy</figcaption>
   </figure>
 </div>
 
 <div class="p2-grid c2 narrow">
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/lian.png" alt="Lian Fourier magnitude" loading="lazy">
-    <figcaption>Lian Fourier magnitude</figcaption>
+    <figcaption>Azuma Seren Fourier magnitude</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/taffy.png" alt="Taffy Fourier magnitude" loading="lazy">
-    <figcaption>Taffy Fourier magnitude</figcaption>
+    <figcaption>Ace Taffy Fourier magnitude</figcaption>
   </figure>
 </div>
 
@@ -696,8 +693,6 @@ I use the Lian/Taffy pair as the main worked example because it has the largest 
 </div>
 
 The low-frequency Fourier magnitude should show its strongest energy near the center, while the high-frequency spectrum should move the visible energy farther from the center. The hybrid spectrum contains contributions from both, which is the frequency-domain counterpart of adding the high-frequency information from one image to the low-frequency information from the other.
-
-<!-- MISSING/VERIFY: the rubric asks for the original and aligned images for the one fully analyzed hybrid; these are present for Lian/Taffy above. -->
 
 ### Part 2.3: Gaussian and Laplacian Stacks
 
@@ -730,11 +725,11 @@ Thus, the Laplacian stack divides the image into different frequency bands. The 
 <div class="p2-grid c1 medium">
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_3/graphs/laplacian_gaussian.png" alt="Gaussian/Laplacian stack visualization" loading="lazy">
-    <figcaption>Gaussian/Laplacian stack visualization</figcaption>
+    <figcaption>Gaussian/Laplacian Stack Visualization</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_3/graphs/oraple.png" alt="Oraple stack result / Figure 3.42-style visualization" loading="lazy">
-    <figcaption>Oraple stack result / Figure 3.42-style visualization</figcaption>
+    <figcaption>Oraple Atack Result / Figure 3.42-style Visualization</figcaption>
   </figure>
 </div>
 
@@ -793,7 +788,7 @@ The Oraple is the classic demonstration because the straight seam can be made vi
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_4/half_peeled_shrimp.png" alt="Half-peeled shrimp blend, alternate output" loading="lazy">
-    <figcaption>Shrimp + Lobster Blend, alternate output</figcaption>
+    <figcaption>Shrimp + Lobster Stack</figcaption>
   </figure>
 </div>
 
@@ -808,7 +803,7 @@ This example shows how the same multiresolution blending idea can be used outsid
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_4/hamster_dafu.png" alt="Hamster + Daifuku Blend, alternate output" loading="lazy">
-    <figcaption>Hamster + Dafu blend, alternate output</figcaption>
+    <figcaption>Hamster + Dafu blend</figcaption>
   </figure>
 </div>
 
