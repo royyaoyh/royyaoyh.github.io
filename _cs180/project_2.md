@@ -200,7 +200,7 @@ where $I$ is the image, $K$ is the filter, and $O$ is the output. The filter is 
 # 4 loops
 def convolve2d_4loops(image, ker):
     img_rows, img_cols = image.shape
-    # flip the kernal
+    # flip the kernel
     kernel = np.flip(ker)
 
     k_rows, k_cols = kernel.shape
@@ -217,9 +217,9 @@ def convolve2d_4loops(image, ker):
         # iterate image columns
         for j in range(width):
             sum_val = 0.0
-            # iterate kernal rows
+            # iterate kernel rows
             for m in range(k_rows):
-                # iterate kernal columns
+                # iterate kernel columns
                 for n in range(k_cols):
                     row = i + m - center_m
                     col = j + n - center_n
@@ -255,7 +255,7 @@ where $K'$ is the flipped kernel. Using zero padding, the part of the kernel out
 
 def convolve_2d_2loops(image, ker):
     img_rows, img_cols = image.shape
-    # flip the kernal
+    # flip the kernel
     kernel = np.flip(ker)
 
     k_rows, k_cols = kernel.shape
@@ -338,7 +338,7 @@ The average runtime drops to about $16.07$ seconds. This is about $$21.8\,/\,16.
   </tbody>
 </table>
 
-The library implementation is dramatically faster, with an average of about $0.0767$ seconds. Compared with my two-loop implementation, the measured speedup is roughly $16.07/0.0767 \approx 209\times$. This illustrates why optimized numerical libraries are useful for image processing: the operation itself is simple, but doing billions of small Python-level operations is expensive.
+My implementation matches ``convolve2d``. The library implementation is dramatically faster, with an average of about $0.0767$ seconds. Compared with my two-loop implementation, the measured speedup is roughly $16.07/0.0767 \approx 209\times$. This illustrates why optimized numerical libraries are useful for image processing: the operation itself is simple, but doing billions of small Python-level operations is expensive.
 
 #### Results
 
@@ -435,7 +435,7 @@ E(i,j)=
 \end{cases}
 $$
 
-The threshold is a qualitative tradeoff. A threshold that is too low keeps small changes and noise, while a threshold that is too high removes weak but real edges. I chose the threshold to suppress much of the noise while retaining the main edges in the cameraman image.
+The threshold is a qualitative tradeoff. I picked threshold value of 0.15. A threshold that is too low keeps small changes and noise, while a threshold that is too high removes weak but real edges. I chose the threshold to suppress much of the noise while retaining the main edges in the cameraman image.
 
 <div class="p2-grid c2 narrow">
   <figure>
@@ -493,16 +493,20 @@ Therefore, instead of first blurring the image and then applying the derivative,
     <figcaption>Gaussian + Vertical Derivative</figcaption>
   </figure>
   <figure>
-    <img src="/images/cs180/proj2/output/Part_1_3/gauss_hor_kernal.png" alt="Horizontal DoG filter" loading="lazy">
+    <img src="/images/cs180/proj2/output/Part_1_3/gauss_hor_kernel.png" alt="Horizontal DoG filter" loading="lazy">
     <figcaption>Horizontal DoG Filter</figcaption>
   </figure>
   <figure>
-    <img src="/images/cs180/proj2/output/Part_1_3/gauss_ver_kernal.png" alt="Vertical DoG filter" loading="lazy">
+    <img src="/images/cs180/proj2/output/Part_1_3/gauss_ver_kernel.png" alt="Vertical DoG filter" loading="lazy">
     <figcaption>Vertical DoG Filter</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss.png" alt="Gaussian-smoothed cameraman" loading="lazy">
     <figcaption>Gaussian-smoothed Cameraman</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/output/supplement/cameraman_gauss_thres.png" alt="Binarized gradient magnitude after Gaussian smoothing" loading="lazy">
+    <figcaption>Binarized Edge Image After Gaussian Smoothing</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss_filtered_filter.png" alt="Gradient magnitude from the DoG filters" loading="lazy">
@@ -532,7 +536,7 @@ The Gaussian-smoothed edge image is cleaner than the finite-difference edge imag
 
 In high level, sharpening works by separating an image into a low-frequency part and a high-frequency part. A blurred image keeps mostly low-frequency information, while the difference between the original and blurred image captures high-frequency details such as edges and fine texture.
 
-I used the unsharp-mask idea to add some of that high-frequency information back into the image. It disproportionally amplifies the high frequency components of an image while making the low-frequency component the same. This gives sharp constant on edges.
+I used the unsharp-mask idea to add some of that high-frequency information back into the image. Sharpening increases the contribution of high-frequency information such as edges and fine details while leaving the original low-frequency structure largely unchanged.
 
 A useful way to write the process is
 
@@ -612,7 +616,7 @@ As the sharpening amount increases from $\alpha=0.5$ to $\alpha=5$, the high-fre
 
 <p class="p2-cap">Sharp → blur → sharpen-back experiment on Lobos</p>
 
-The images are the direct evaluation requested in the project description: I start with the original sharp image, blur it, and then apply the sharpening operation to that blurred image. The sharpened result recovers some apparent edge contrast, but it does not become identical to the original because the blur has already removed high-frequency information.
+The images are the direct evaluation requested in the project description: I start with the original sharp image, blur it, and then apply the sharpening operation to that blurred image with $\alpha=5$ and sigma=1. The sharpened result recovers some apparent edge contrast, but it does not become identical to the original because the blur has already removed high-frequency information.
 
 After subtracting the original image by the sharpened blurred image, the original image have more high frequency information than the sharpened blurred image. This can be caused by the lost high-frequency information that cannot be recovered after the blur. Applying the sharpening mask boosts the high-frequency details remaining in the blurred image, but it can't recover the information that was lost.
 
@@ -679,22 +683,22 @@ The alignment is important because the high-frequency structure needs to corresp
 
 The intuition is that $\sigma$ controls the width of the Gaussian blur. A larger $\sigma$ removes more high frequencies from the low-pass image, which makes the low-pass result smoother. For the high-pass component $$I-G_\sigma*I$$, a larger $\sigma$ means more of the original image is treated as high-frequency detail because the blur removes a wider range of frequencies.
 
-Based on this rule, I tuned it that whenever I have my glass on, its the high frequency image while if I have my glass off, its the low frequency image. (Roy’s criteria)
+Based on this rule, I tuned it that whenever I have my glass on, its the high frequency image while if I have my glass off, its the low frequency image. (Roy’s criteria) I used sigma1 = 5 for the high-pass image and sigma2 = 3 for the low-pass image.
 
 This criterion is based on the expected viewing distance. At close range, the fine details are available and the high-frequency image is easier to recognize. At farther distances, the image is effectively blurred by the limited resolution of the visual system, making the low-frequency interpretation more prominent.
 
 <div class="p2-grid c4">
   <figure>
-    <img src="/images/cs180/proj2/image/Part_2_2/cat.jpg" alt="Cat input" loading="lazy">
-    <figcaption>Cat</figcaption>
+    <img src="/images/cs180/proj2/image/Part_2_2/cat.jpg" alt="Derek input" loading="lazy">
+    <figcaption>Derek</figcaption>
   </figure>
   <figure>
-    <img src="/images/cs180/proj2/image/Part_2_2/man.jpg" alt="Man input" loading="lazy">
-    <figcaption>Man</figcaption>
+    <img src="/images/cs180/proj2/image/Part_2_2/man.jpg" alt="Nutmeg input" loading="lazy">
+    <figcaption>Nutmeg</figcaption>
   </figure>
   <figure class="w2">
-    <img src="/images/cs180/proj2/output/Part_2_2/catman.png" alt="Cat + man hybrid" loading="lazy">
-    <figcaption>Cat + Man Hybrid</figcaption>
+    <img src="/images/cs180/proj2/output/Part_2_2/catman.png" alt="Derek + Nutmeg hybrid" loading="lazy">
+    <figcaption>Derek + Nutmeg Hybrid</figcaption>
   </figure>
 </div>
 
@@ -702,16 +706,16 @@ This criterion is based on the expected viewing distance. At close range, the fi
 
 <div class="p2-grid c4">
   <figure>
-    <img src="/images/cs180/proj2/output/Part_2_2/seal.png" alt="Seal" loading="lazy">
+    <img src="/images/cs180/proj2/image/Part_2_2/bagua.png" alt="Bagua" loading="lazy">
     <figcaption>Bagua Diagram</figcaption>
   </figure>
   <figure>
-    <img src="/images/cs180/proj2/output/Part_2_2/bagua.png" alt="Bagua" loading="lazy">
+    <img src="/images/cs180/proj2/image/Part_2_2/seal.png" alt="Seal" loading="lazy">
     <figcaption>Berkeley Seal</figcaption>
   </figure>
   <figure class="w2">
     <img src="/images/cs180/proj2/output/Part_2_2/seal_bagua.png" alt="Seal + Bagua Diahybrid" loading="lazy">
-    <figcaption>Berkeley Seal + Bagua Digram Hybrid</figcaption>
+    <figcaption>Berkeley Seal + Bagua Diagram Hybrid</figcaption>
   </figure>
 </div>
 
@@ -770,6 +774,21 @@ I use the <a href="https://space.bilibili.com/1437582453" target="_blank" rel="n
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/taffy.png" alt="Taffy Fourier magnitude" loading="lazy">
     <figcaption><a href="https://space.bilibili.com/1265680561" target="_blank" rel="noopener">Ace Taffy</a> Fourier magnitude</figcaption>
+  </figure>
+</div>
+
+<div class="p2-grid c3">
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_2/taffy.png" alt="Taffy low-pass result" loading="lazy">
+    <figcaption>Ace Taffy Low-pass Result ($\sigma_2=3$)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_2/lian.png" alt="Azuma Seren high-pass result" loading="lazy">
+    <figcaption>Azuma Seren High-pass Result ($\sigma_1=5$)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_2/taffy_lian.png" alt="Taffy + Azuma Seren hybrid" loading="lazy">
+    <figcaption>Ace Taffy + Azuma Seren Hybrid</figcaption>
   </figure>
 </div>
 
@@ -839,7 +858,7 @@ Thus, the Laplacian stack divides the image into different frequency bands. The 
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_3/graphs/oraple.png" alt="Oraple stack result / Figure 3.42-style visualization" loading="lazy">
-    <figcaption>Oraple Atack Result / Figure 3.42-style Visualization</figcaption>
+    <figcaption>Oraple Result / Figure 3.42-style Visualization</figcaption>
   </figure>
 </div>
 
@@ -871,7 +890,7 @@ Finally, the blended image is reconstructed by summing the blended Laplacian lev
 
 **Fixing Seam:** I used two ways to fix seam:
 
-1. Laplacian pyramid `sigma*2**level` for each level. This captures a broader range and makes the intermediate coarser levels capture more detail and make the bandpass spam a larger spam of the spectrum instead of making all low frequency structure fit in the residual image
+1. Gaussian stack `sigma*2**level` for each level. This captures a broader range and makes the intermediate coarser levels capture more detail and make the bandpass spam a larger spam of the spectrum instead of making all low frequency structure fit in the residual image
 2. Making the Gaussian mask filter instead of a binary filter for the finest detail layer solves the seam issue significantly
 
 The first idea makes the effective blur scale grow with the level, so the coarser bands represent broader spatial structures. The second is especially important for eliminating the obvious hard boundary: instead of multiplying the finest-level details by a binary left/right switch, a smoothly varying Gaussian mask gradually transfers detail from one image to the other.
@@ -945,7 +964,7 @@ This example shows how the same multiresolution blending idea can be used outsid
   </figure>
 </div>
 
-The custom examples demonstrate the more creative side of multiresolution blending. A useful mask does not have to be a straight vertical line. With an irregular mask, different parts of the two images can interleave, and the multiscale process helps the boundaries look more natural than a hard pixel-level cut.
+The custom examples demonstrate the more creative side of multiresolution blending. An irregular mask is used here. A useful mask does not have to be a straight vertical line. With an irregular mask, different parts of the two images can interleave, and the multiscale process helps the boundaries look more natural than a hard pixel-level cut.
 
 <div class="p2-note" markdown="1">
 
