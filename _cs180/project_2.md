@@ -604,7 +604,7 @@ For the Lian/Taffy example, the filenames indicate an aligned-input pair and sep
 
 <div style="display: flex; gap: 10px; margin-bottom: 6px;">
   <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/low/.png" style="width: 100%;">
+    <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/low.png" style="width: 100%;">
     <figcaption style="text-align: center;">Low-frequency spectrum</figcaption>
   </figure>
   <figure style="width: 48%; margin: 0;">
