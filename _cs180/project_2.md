@@ -770,7 +770,15 @@ The first idea makes the effective blur scale grow with the level, so the coarse
 
 #### Oraple
 
-<div class="p2-grid c1" style="max-width: 50%">
+<div class="p2-grid c3">
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_2_3/apple.jpeg" alt="Apple" loading="lazy">
+    <figcaption>Apple</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_2_3/orange.jpeg" alt="Orange" loading="lazy">
+    <figcaption>Orange</figcaption>
+  </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_3/oraple.jpeg" alt="Apple + orange multiresolution blend" loading="lazy">
     <figcaption>Apple + Orange Multiresolution Blend</figcaption>
@@ -805,7 +813,7 @@ The Oraple is the classic demonstration because the straight seam can be made vi
 
 This example shows how the same multiresolution blending idea can be used outside the textbook apple/orange example. The mask determines which parts of each input contribute to the final result, while the Gaussian stack of the mask softens the transition.
 
-#### Custom blend 2: Hamster + Dafu
+#### Custom blend 2: Hamster + Daifuku
 
 <div class="p2-grid c3">
   <figure>
@@ -825,7 +833,7 @@ This example shows how the same multiresolution blending idea can be used outsid
 <div class="p2-grid c1 medium">
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_4/hamster_dafu.png" alt="Hamster + Dafu blend, stacks" loading="lazy">
-    <figcaption>Hamster + Dafu Stack</figcaption>
+    <figcaption>Hamster + Daifuku Stack</figcaption>
   </figure>
 </div>
 
