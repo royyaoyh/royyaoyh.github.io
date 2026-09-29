@@ -39,10 +39,48 @@ window.MathJax = {
 .p2-note { color: inherit; border-left: 4px solid #6f97c9; background: rgba(111, 151, 201, 0.14); padding: 0.7em 1.1em; margin: 1.4em 0; border-radius: 0 4px 4px 0; }
 .p2-note p:last-child, .p2-note ol:last-child { margin-bottom: 0; }
 .p2-note ol { margin-top: 0.4em; }
-details.p2-code { margin: 1.2em 0; padding: 0.5em 1em; border: 1px solid rgba(128, 128, 128, 0.4); border-radius: 6px; background: rgba(128, 128, 128, 0.08); color: inherit; }
-details.p2-code summary { cursor: pointer; color: inherit; }
+.p2-code { margin: 1.2em 0; border: 1px solid rgba(128, 128, 128, 0.45); border-radius: 6px; overflow: hidden; color: inherit; }
+.p2-code-title { padding: 0.5em 1em; font-weight: 700; color: inherit; background: rgba(128, 128, 128, 0.14); border-bottom: 1px solid rgba(128, 128, 128, 0.35); }
+.p2-code > p { margin: 0; padding: 0.6em 1em; }
+.p2-code .highlighter-rouge, .p2-code .highlight, .p2-code pre { margin: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; overflow-x: auto; }
+.p2-code pre { padding: 0.8em 1em !important; }
+html .p2-code .highlighter-rouge, html .p2-code .highlight, html .p2-code pre, html .p2-code pre code { background: #ffffff !important; color: #24292f !important; }
+html .p2-code .highlight span { color: #24292f !important; background: transparent !important; }
+html .p2-code .highlight span[class^="c"] { color: #6e7781 !important; font-style: italic; }
+html .p2-code .highlight span[class^="k"], html .p2-code .highlight span.ow { color: #cf222e !important; }
+html .p2-code .highlight span[class^="s"] { color: #0a3069 !important; }
+html .p2-code .highlight span[class^="m"], html .p2-code .highlight span.il { color: #0550ae !important; }
+html .p2-code .highlight span.nf, html .p2-code .highlight span.nc, html .p2-code .highlight span.fm { color: #8250df !important; }
+html .p2-code .highlight span.nb, html .p2-code .highlight span.bp { color: #0550ae !important; }
+html[data-p2-mode="dark"] .p2-code .highlighter-rouge, html[data-p2-mode="dark"] .p2-code .highlight, html[data-p2-mode="dark"] .p2-code pre, html[data-p2-mode="dark"] .p2-code pre code { background: #0d1117 !important; color: #e6edf3 !important; }
+html[data-p2-mode="dark"] .p2-code .highlight span { color: #e6edf3 !important; background: transparent !important; }
+html[data-p2-mode="dark"] .p2-code .highlight span[class^="c"] { color: #8b949e !important; font-style: italic; }
+html[data-p2-mode="dark"] .p2-code .highlight span[class^="k"], html[data-p2-mode="dark"] .p2-code .highlight span.ow { color: #ff7b72 !important; }
+html[data-p2-mode="dark"] .p2-code .highlight span[class^="s"] { color: #a5d6ff !important; }
+html[data-p2-mode="dark"] .p2-code .highlight span[class^="m"], html[data-p2-mode="dark"] .p2-code .highlight span.il { color: #79c0ff !important; }
+html[data-p2-mode="dark"] .p2-code .highlight span.nf, html[data-p2-mode="dark"] .p2-code .highlight span.nc, html[data-p2-mode="dark"] .p2-code .highlight span.fm { color: #d2a8ff !important; }
+html[data-p2-mode="dark"] .p2-code .highlight span.nb, html[data-p2-mode="dark"] .p2-code .highlight span.bp { color: #79c0ff !important; }
 @media (max-width: 560px) { .p2-grid.c3, .p2-grid.c4 { --n: 2; } }
 </style>
+
+<script>
+(function () {
+  function lum(c) { var m = c.match(/[\d.]+/g); if (!m || (m.length > 3 && parseFloat(m[3]) === 0)) { return null; } return (0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2]) / 255; }
+  function pageIsDark() {
+    var els = [document.querySelector('.page__content'), document.querySelector('article'), document.body, document.documentElement];
+    for (var i = 0; i < els.length; i++) { if (els[i]) { var l = lum(getComputedStyle(els[i]).backgroundColor); if (l !== null) { return l < 0.5; } } }
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function apply() { document.documentElement.setAttribute('data-p2-mode', pageIsDark() ? 'dark' : 'light'); }
+  apply();
+  window.addEventListener('DOMContentLoaded', apply);
+  window.addEventListener('load', apply);
+  var mo = new MutationObserver(function () { setTimeout(apply, 50); });
+  mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme', 'style', 'data-mode', 'data-bs-theme'] });
+  document.addEventListener('DOMContentLoaded', function () { mo.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-theme', 'style'] }); });
+  if (window.matchMedia) { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply); }
+})();
+</script>
 
 ## Overview
 
@@ -64,8 +102,9 @@ $$
 
 where $I$ is the image, $K$ is the filter, and $O$ is the output. The filter is flipped before applying the operation because convolution, under the strict mathematical convention, requires reversing the kernel in both dimensions.
 
-<details class="p2-code" open markdown="1">
-<summary><strong>Code: 4-loop convolution</strong></summary>
+<div class="p2-code" markdown="1">
+
+<div class="p2-code-title">Code: 4-loop convolution</div>
 
 ```python
 # 4 loops
@@ -101,7 +140,7 @@ def convolve2d_4loops(image, ker):
     return output
 ```
 
-</details>
+</div>
 
 #### 2 loops
 
@@ -117,8 +156,9 @@ $$
 
 where $K'$ is the flipped kernel. With zero padding, the part of the kernel outside the image is equivalent to multiplying by zeros.
 
-<details class="p2-code" open markdown="1">
-<summary><strong>Code: 2-loop convolution</strong></summary>
+<div class="p2-code" markdown="1">
+
+<div class="p2-code-title">Code: 2-loop convolution</div>
 
 ```python
 # 2 loops
@@ -164,7 +204,7 @@ def convolve_2d_2loops(image, ker):
 
 The only functional correction I made to the notebook code above is the final `return output` in the two-loop function. Without it, the function finishes after assigning the output array but returns `None` to the caller.
 
-</details>
+</div>
 
 #### What can you use for this section?
 
