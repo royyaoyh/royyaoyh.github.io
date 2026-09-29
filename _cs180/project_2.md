@@ -146,7 +146,7 @@ def convolve2d_4loops(image, ker):
 
 2 loops we iterate through the image pixel by pixel, write an edge case handler that we only need to sum the multiplication the sliced 2d kernel with the sliced 2d window
 
-Instead of explicitly looping over the kernel elements, I can use a sliced portion of the image and kernel and perform the element-by-element multiplication followed by `np.sum`. This keeps the two loops for the image coordinates while using NumPy for the inner matrix operation. Near an image boundary, the kernel extends outside the image, so I use an edge-case handler that only multiplies the overlapping portions.
+Instead of explicitly looping over the kernel elements, I can use a sliced portion of the image and kernel and perform the element-by-element multiplication followed by `np.sum`. This keeps the two loops for the image coordinates while using NumPy for the inner matrix operation. Near an image boundary, the kernel extends outside the image and get index out of bound error, so I use an edge-case handler that only multiplies the overlapping portions.
 
 Conceptually, for a kernel centered at $(i,j)$, I find the valid image window and the matching valid portion of the kernel. The output pixel is then
 
@@ -154,7 +154,7 @@ $$
 O(i,j)=\sum_{(m,n)\in \text{valid overlap}} I(m,n)K'(m,n),
 $$
 
-where $K'$ is the flipped kernel. With zero padding, the part of the kernel outside the image is equivalent to multiplying by zeros.
+where $K'$ is the flipped kernel. Using zero padding, the part of the kernel outside the image is equivalent to multiplying by zeros.
 
 <div class="p2-code" markdown="1">
 
@@ -201,14 +201,11 @@ def convolve_2d_2loops(image, ker):
 
     return output
 ```
-
-The only functional correction I made to the notebook code above is the final `return output` in the two-loop function. Without it, the function finishes after assigning the output array but returns `None` to the caller.
-
 </div>
 
 #### What can you use for this section?
 
-What can you use for this section? I am not entirely sure about this question. I did use np.flip to flip the kernel and use np.sum in the 2d loops for the element by element matrix multiplication.
+I am not entirely sure about this question. I did use np.flip to flip the kernel and use np.sum in the 2d loops for the element by element matrix multiplication.
 
 I used NumPy operations only for my from-scratch implementations. `np.flip` handles the kernel reversal needed for convolution, while `np.sum` computes the sum of all element-wise products in the overlapping region. This is the main difference between my four-loop and two-loop approaches: both perform the same convolution mathematically, but the two-loop version lets NumPy handle the inner arithmetic.
 
@@ -336,7 +333,7 @@ $$
 
 In my implementation, `np.hypot(ver, hor)` computes exactly this combination while avoiding manually writing the square-root expression.
 
-The result is useful because an edge is a location where image intensity changes quickly. A large derivative means a strong local change, and the gradient magnitude measures the overall strength of that change regardless of whether it is mainly horizontal or vertical.
+The result is useful because an edge is a location where image intensity changes quickly in that direction. A large derivative means a strong local change, and the gradient magnitude measures the overall strength of that change regardless of whether it is mainly horizontal or vertical.
 
 Finally, I binarize the gradient magnitude by selecting a threshold $T$:
 
@@ -353,7 +350,7 @@ The threshold is a qualitative tradeoff. A threshold that is too low keeps small
 <div class="p2-grid c2 narrow">
   <figure>
     <img src="/images/cs180/proj2/output/supplement/cameraman_gauss_thres.png" alt="Binarized gradient magnitude after Gaussian smoothing" loading="lazy">
-    <figcaption>Binarized Gradient Magnitude After Gaussian Smoothing</figcaption>
+    <figcaption>Binarized Edge Image After Gaussian Smoothing</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_2/cameraman_thres.png" alt="Finite-difference binarized edge image" loading="lazy">
@@ -361,7 +358,7 @@ The threshold is a qualitative tradeoff. A threshold that is too low keeps small
   </figure>
 </div>
 
-<p class="p2-cap">Comparison of edge maps before and after Gaussian smoothing</p>
+<p class="p2-cap">Comparison of binarized edge maps before and after Gaussian smoothing. You see the binarized edge image with Gaussian Smoothing have less noise on oblique edges</p>
 
 ### Part 1.3: Derivative of Gaussian (DoG) Filter
 
@@ -431,11 +428,12 @@ Compared with the original finite-difference result, the Gaussian-smoothed resul
 
 <div class="p2-note" markdown="1">
 
-**Keynote:** When convolving the kernel with the Gaussian filter, make sure to use `mode="full"` to not lose details from the image.
+**Keynote:** When convolving the kernel with the Gaussian filter, make sure to use `mode="full"` to not lose filter details at the corner.
+
+Using a full convolution when constructing the combined DoG kernel preserves the complete support of the two filters before they are applied to the image. The resulting combined filter is larger than either filter alone because the convolution of two finite kernels increases their support.
 
 </div>
 
-Using a full convolution when constructing the combined DoG kernel preserves the complete support of the two filters before they are applied to the image. The resulting combined filter is larger than either filter alone because the convolution of two finite kernels increases their support.
 
 The Gaussian-smoothed edge image is cleaner than the finite-difference edge image because smoothing reduces small high-frequency variations before differentiation. The main edges remain, while many weaker responses are suppressed. This is the main practical advantage I observe from adding the Gaussian filter before the derivative.
 
@@ -473,12 +471,6 @@ I_{sharp}=(1+\alpha)I-\alpha(G_\sigma*I),
 $$
 
 which shows that the entire operation can be represented as a single convolution with an unsharp-mask filter.
-
-For evaluation, pick a sharp image, blur it, and then try to sharpen it again. Compare the original and the sharpened image and report your observations.
-
-After subtracting the original image by the sharpened blurred image, the original image have more high frequency information than the sharpened blurred image. This can be caused by the lost high-frequency information that cannot be recovered after the blur. Applying the sharpening mask boosts the high-frequency details remaining in the blurred image, but it can't recover the information that was lost.
-
-This experiment shows an important limitation of sharpening. Sharpening is not a time machine: once the blur has removed high-frequency information, the missing information cannot be exactly reconstructed. The sharpening filter only increases the contrast of the high-frequency information that remains after blurring. As $\alpha$ increases, edges become more pronounced, but overly large values can also make noise and halos more visible.
 
 <div class="p2-grid c4">
   <figure>
@@ -534,10 +526,15 @@ As the sharpening amount increases from $\alpha=0.5$ to $\alpha=5$, the high-fre
     <figcaption>Point Lobos: Sharpened</figcaption>
   </figure>
 </div>
+#### For evaluation, pick a sharp image, blur it, and then try to sharpen it again. Compare the original and the sharpened image and report your observations.
 
 <p class="p2-cap">Sharp → blur → sharpen-back experiment on Lobos</p>
 
-The Lobos experiment is the direct evaluation requested in the project description: I start with the original sharp image, blur it, and then apply the sharpening operation to that blurred image. The sharpened result recovers some apparent edge contrast, but it does not become identical to the original because the blur has already removed high-frequency information.
+The images are the direct evaluation requested in the project description: I start with the original sharp image, blur it, and then apply the sharpening operation to that blurred image. The sharpened result recovers some apparent edge contrast, but it does not become identical to the original because the blur has already removed high-frequency information.
+
+After subtracting the original image by the sharpened blurred image, the original image have more high frequency information than the sharpened blurred image. This can be caused by the lost high-frequency information that cannot be recovered after the blur. Applying the sharpening mask boosts the high-frequency details remaining in the blurred image, but it can't recover the information that was lost.
+
+This experiment shows an important limitation of sharpening. Sharpening is not a time machine: once the blur has removed high-frequency information, the missing information cannot be exactly reconstructed. The sharpening filter only increases the contrast of the high-frequency information that remains after blurring. As $\alpha$ increases, edges become more pronounced, but overly large values can also make noise more visible.
 
 <div class="p2-note" markdown="1">
 
@@ -601,20 +598,6 @@ L_{image\ 2}=G_{\sigma_l}*I_2.
 $$
 
 The alignment is important because the high-frequency structure needs to correspond spatially with the low-frequency structure. When the two images are aligned well, the visual system can interpret different information depending on viewing distance.
-
-#### Frequency-domain analysis
-
-We notice in the low frequency image, most of the information is gathered in the middle cross while in high frequency image, most of the image is not on the axes, but on the quarters
-
-More precisely, after applying `fftshift`, low-frequency energy is concentrated near the center of the Fourier image because the center represents low spatial frequencies. High-frequency energy appears farther from the center. It does not have to be literally on the axes or in the quarters, but the important visual distinction is that the high-frequency component is farther from the center than the low-frequency component.
-
-For the frequency-domain visualization, the magnitude is displayed on a logarithmic scale. A typical computation is
-
-$$
-F(u,v)=\log\left(\left|\operatorname{fftshift}(\operatorname{fft2}(I))\right|\right),
-$$
-
-which makes both very strong low-frequency values and weaker high-frequency values easier to see at the same time.
 
 #### Cutoff frequency choice
 
@@ -693,7 +676,7 @@ These examples demonstrate how changing the input pair changes the visual effect
 
 #### Full frequency analysis example
 
-I use the <a href="https://space.bilibili.com/1437582453" target="_blank" rel="noopener">Azuma Seren</a>/<a href="https://space.bilibili.com/1265680561" target="_blank" rel="noopener">Taffy</a> pair as the main worked example because it has the largest set of intermediate results: the aligned inputs, their Fourier magnitudes, and the spectra of the high-pass, low-pass, and hybrid images.
+I use the <a href="https://space.bilibili.com/1437582453" target="_blank" rel="noopener">Azuma Seren</a>/<a href="https://space.bilibili.com/1265680561" target="_blank" rel="noopener">Ace Taffy</a> pair as the main worked example. Here are the aligned inputs, their Fourier magnitudes, and the spectra of the high-pass, low-pass, and hybrid images.
 
 <div class="p2-grid c2 narrow">
   <figure>
@@ -732,13 +715,27 @@ I use the <a href="https://space.bilibili.com/1437582453" target="_blank" rel="n
   </figure>
 </div>
 
-The low-frequency Fourier magnitude should show its strongest energy near the center, while the high-frequency spectrum should move the visible energy farther from the center. The hybrid spectrum contains contributions from both, which is the frequency-domain counterpart of adding the high-frequency information from one image to the low-frequency information from the other.
+The low-frequency Fourier magnitude should show its strongest energy near the center, while the high-frequency spectrum should have the visible energy farther from the center. The hybrid spectrum contains contributions from both, which is the frequency-domain counterpart of adding the high-frequency information from one image to the low-frequency information from the other.
+
+#### Frequency-domain analysis
+
+We notice in the low frequency image, most of the information is gathered in the middle cross while in high frequency image, most of the image is not on the axes, but on the quarters
+
+More precisely, after applying `fftshift`, low-frequency energy is concentrated near the center of the Fourier image because the center represents low spatial frequencies. High-frequency energy appears farther from the center. It does not have to be literally on the axes or in the quarters, but the important visual distinction is that the high-frequency component is farther from the center than the low-frequency component.
+
+For the frequency-domain visualization, the magnitude is displayed on a logarithmic scale. A typical computation is
+
+$$
+F(u,v)=\log\left(\left|\operatorname{fftshift}(\operatorname{fft2}(I))\right|\right),
+$$
+
+which makes both very strong low-frequency values and weaker high-frequency values easier to see at the same time.
 
 ### Part 2.3: Gaussian and Laplacian Stacks
 
 A Gaussian stack and Laplacian stack keep the same image dimensions at every level. This is the same implementation as Project 1 except there is no downsampling.
 
-I use `gaussian_stack(img, sigma, levels=4)` and `laplacian_stack(g)`, where level is the number of layers and sigma is the standard deviation of the Gaussian distribution of the filter. The output order of `gaussian_stack` is would be original, blurred once, blurred twice … fine detail, …, coarsest/general shape. The output order of `laplacian_stack` is bandpass filter 1 (greatest detail), bandpass filter 2 (less, but still great detail), … the same last layer of the Gaussian stack.
+I use `gaussian_stack(img, sigma, levels=4)` and `laplacian_stack(g)`, where level is the number of layers and sigma is the standard deviation of the Gaussian distribution of the filter. The output order of `gaussian_stack` is would be original, blurred once, blurred twice which is the same as saying fine detail, …, coarsest/general shape. The output of `laplacian_stack` is bandpass filter 1 (greatest detail), bandpass filter 2 (less, but still great detail), … the same last layer of the Gaussian stack.
 
 For the Gaussian stack, let $$G_0=I$$ and define successive levels as
 
@@ -791,19 +788,17 @@ M(x,y)=
 \end{cases}
 $$
 
-The important step is that I also create a Gaussian stack of the mask. Let $$M_i$$ be the Gaussian-blurred mask at level $i$. Then for the corresponding Laplacian bands $$L^A_i$$ and $$L^B_i$$, I blend them using
+I also create a Gaussian stack of the mask. Let $$M_i$$ be the Gaussian-blurred mask at level $i$. Then for the corresponding Laplacian bands $$L^A_i$$ and $$L^B_i$$, I blend them using
 
 $$
 L_i^{blend}=M_i\,L^A_i+(1-M_i)\,L^B_i.
 $$
 
-Finally, the blended image is reconstructed by summing the blended Laplacian levels and the final low-frequency residual.
-
-This works because the mask changes slowly at coarse frequency bands. A hard step in the original mask becomes a smooth transition after Gaussian filtering, so the seam is not equally sharp at every frequency.
+Finally, the blended image is reconstructed by summing the blended Laplacian levels. This works because the mask changes slowly at coarse frequency bands. A hard step in the original mask becomes a smooth transition after Gaussian filtering, so the seam is not equally sharp at every frequency.
 
 **Fixing Seam:** I used two ways to fix seam:
 
-1. Laplacian pyramid `sigma*2**level` for each level. This captures a broader range and makes coarser levels capture more detail and make the bandpass spam a larger spam of the spectrum instead of making all low frequency structure fit in the residual image
+1. Laplacian pyramid `sigma*2**level` for each level. This captures a broader range and makes the intermediate coarser levels capture more detail and make the bandpass spam a larger spam of the spectrum instead of making all low frequency structure fit in the residual image
 2. Making the Gaussian mask filter instead of a binary filter for the finest detail layer solves the seam issue significantly
 
 The first idea makes the effective blur scale grow with the level, so the coarser bands represent broader spatial structures. The second is especially important for eliminating the obvious hard boundary: instead of multiplying the finest-level details by a binary left/right switch, a smoothly varying Gaussian mask gradually transfers detail from one image to the other.
@@ -821,7 +816,7 @@ The first idea makes the effective blur scale grow with the level, so the coarse
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_2_3/oraple.jpeg" alt="Apple + orange multiresolution blend" loading="lazy">
-    <figcaption>Apple + Orange Multiresolution Blend</figcaption>
+    <figcaption>Apple + Orange Blend</figcaption>
   </figure>
 </div>
 
@@ -851,7 +846,7 @@ The Oraple is the classic demonstration because the straight seam can be made vi
   </figure>
 </div>
 
-This example shows how the same multiresolution blending idea can be used outside the textbook apple/orange example. The mask determines which parts of each input contribute to the final result, while the Gaussian stack of the mask softens the transition.
+This example shows how the same multiresolution blending idea can be used outside the textbook apple/orange example. The mask determines which parts of each input contribute to the final result, while the Gaussian stack of the mask softens the transition. A self-defined align_with_mask() function is made to match the object to the mask with the background image. 
 
 #### Custom blend 2: Hamster + Daifuku
 
@@ -879,11 +874,9 @@ This example shows how the same multiresolution blending idea can be used outsid
 
 The custom examples demonstrate the more creative side of multiresolution blending. A useful mask does not have to be a straight vertical line. With an irregular mask, different parts of the two images can interleave, and the multiscale process helps the boundaries look more natural than a hard pixel-level cut.
 
-<!-- MISSING/VERIFY: explicitly show the irregular mask itself for the custom example. The filenames alone cannot prove which custom blend uses the irregular mask. -->
-
 <div class="p2-note" markdown="1">
 
-**Keynote:** Cv reads in BGR order while plt plot in RGB order. You have to reverse the color channels otherwise you would get color flipped image!
+**Keynote:** `cv` reads in BGR order while `plt` plot in RGB order. You have to reverse the color channels otherwise you would get color flipped image!
 
 </div>
 
@@ -897,13 +890,13 @@ The output images also show that multiresolution blending is more than simply av
 
 ## Things I learned
 
-What I amazed me the most about is the concept about breaking an image into a frequency domain. I always think of only 2d signals being able to break into frequency domain. Seeings how human eyes is able to depict high frequency (fine details) and low frequency (general shape) really fascinates me.
+What amazed me the most about is the concept about breaking an image into a frequency domain. I always think of only 1d signals being able to break into frequency domain. Seeings how human eyes is able to depict high frequency (fine details) and low frequency (general shape) differently really fascinates me.
 
-The most important connection for me was seeing the same idea appear repeatedly across the entire project. Derivatives emphasize changes, Gaussian filters remove high frequencies, Laplacian differences isolate frequency bands, and multiresolution blending combines those bands in a controlled way. What initially looked like several unrelated image-processing tricks turned out to be different uses of the same underlying idea: separating and manipulating spatial frequencies.
+The most important connection for me was seeing the same idea appear repeatedly across the entire project. Derivatives emphasize changes, Gaussian filters remove high frequencies, Laplacian differences isolate frequency bands, and multiresolution blending combines those bands in a controlled way. 
 <div class="p2-grid c1" style="max-width: 50%">
   <figure>
     <img src="/images/cs180/proj2/cute.jpg" alt="hamster with daifuku" loading="lazy">
-    <figcaption>My hamster + daifuku image blending inspiration</figcaption>
+    <figcaption>Hamster + daifuku image blending inspiration</figcaption>
   </figure>
 </div>
 
