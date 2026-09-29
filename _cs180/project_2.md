@@ -60,6 +60,17 @@ html[data-p2-mode="dark"] .p2-code .highlight span[class^="s"] { color: #a5d6ff 
 html[data-p2-mode="dark"] .p2-code .highlight span[class^="m"], html[data-p2-mode="dark"] .p2-code .highlight span.il { color: #79c0ff !important; }
 html[data-p2-mode="dark"] .p2-code .highlight span.nf, html[data-p2-mode="dark"] .p2-code .highlight span.nc, html[data-p2-mode="dark"] .p2-code .highlight span.fm { color: #d2a8ff !important; }
 html[data-p2-mode="dark"] .p2-code .highlight span.nb, html[data-p2-mode="dark"] .p2-code .highlight span.bp { color: #79c0ff !important; }
+.p2-cmp { display: block !important; max-width: 640px; margin: 1.4em auto 0.6em !important; text-align: center; }
+.p2-cmp-stage { position: relative; overflow: hidden; line-height: 0; border-radius: 4px; touch-action: pan-y; -webkit-user-select: none; user-select: none; cursor: ew-resize; }
+.p2-cmp-stage img { display: block; width: 100%; height: auto; margin: 0 !important; pointer-events: none; -webkit-user-drag: none; }
+.p2-cmp-stage img.p2-layer { position: absolute; top: 0; left: 0; height: 100%; object-fit: cover; }
+.p2-cmp-tag { position: absolute; top: 0; overflow: hidden; pointer-events: none; text-align: left; }
+.p2-cmp-tag span { display: inline-block; max-width: calc(100% - 16px); margin: 8px; padding: 2px 8px; font: 600 0.75rem/1.6 sans-serif; color: #fff; background: rgba(0, 0, 0, 0.6); border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: top; }
+.p2-cmp-handle { position: absolute; top: 0; bottom: 0; width: 44px; margin-left: -22px; cursor: ew-resize; touch-action: pan-y; outline: none; }
+.p2-cmp-handle::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; background: #e8973a; }
+.p2-cmp-knob { position: absolute; top: 50%; left: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: #e8973a; color: #111; font: 700 16px/34px sans-serif; letter-spacing: -1px; text-align: center; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.45); }
+.p2-cmp-handle:focus-visible .p2-cmp-knob { box-shadow: 0 0 0 3px rgba(232, 151, 58, 0.55); }
+.p2-cmp figcaption { margin-top: 0.5em; font-size: 0.9em; font-style: italic; line-height: 1.4; color: inherit; opacity: 0.85; text-align: center; }
 @media (max-width: 560px) { .p2-grid.c3, .p2-grid.c4 { --n: 2; } }
 </style>
 
@@ -79,6 +90,85 @@ html[data-p2-mode="dark"] .p2-code .highlight span.nb, html[data-p2-mode="dark"]
   mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme', 'style', 'data-mode', 'data-bs-theme'] });
   document.addEventListener('DOMContentLoaded', function () { mo.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-theme', 'style'] }); });
   if (window.matchMedia) { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply); }
+})();
+</script>
+
+<script>
+(function () {
+  function init(fig) {
+    var imgs = Array.prototype.filter.call(fig.children, function (c) { return c.tagName === 'IMG'; });
+    var n = imgs.length;
+    if (n < 2) { return; }
+    var labels = (fig.getAttribute('data-labels') || '').split('|');
+    var stage = document.createElement('div');
+    stage.className = 'p2-cmp-stage';
+    fig.insertBefore(stage, imgs[0]);
+    var pos = [], tags = [], handles = [], k;
+    for (k = 0; k < n; k++) {
+      stage.appendChild(imgs[k]);
+      if (k > 0) { imgs[k].className += ' p2-layer'; pos.push(100 * k / n); }
+    }
+    for (k = 0; k < n; k++) {
+      var box = document.createElement('div'), chip = document.createElement('span');
+      box.className = 'p2-cmp-tag';
+      chip.textContent = labels[k] || '';
+      box.appendChild(chip); stage.appendChild(box); tags.push(box);
+    }
+    for (k = 0; k < n - 1; k++) {
+      var h = document.createElement('div');
+      h.className = 'p2-cmp-handle';
+      h.setAttribute('role', 'slider'); h.setAttribute('tabindex', '0');
+      h.setAttribute('aria-label', 'Comparison slider ' + (k + 1));
+      h.setAttribute('aria-valuemin', '0'); h.setAttribute('aria-valuemax', '100');
+      h.innerHTML = '<span class="p2-cmp-knob">&lsaquo;&rsaquo;</span>';
+      stage.appendChild(h); handles.push(h);
+    }
+    function render() {
+      for (var i = 0; i < n; i++) {
+        var s = i === 0 ? 0 : pos[i - 1], e = i === n - 1 ? 100 : pos[i];
+        if (i > 0) {
+          var clip = 'inset(0 ' + (100 - e) + '% 0 ' + s + '%)';
+          imgs[i].style.clipPath = clip; imgs[i].style.webkitClipPath = clip;
+        }
+        tags[i].style.left = s + '%'; tags[i].style.width = (e - s) + '%';
+      }
+      for (var j = 0; j < handles.length; j++) {
+        handles[j].style.left = pos[j] + '%';
+        handles[j].setAttribute('aria-valuenow', String(Math.round(pos[j])));
+      }
+    }
+    function setPos(i, v) {
+      var lo = (i > 0 ? pos[i - 1] : 0) + 4, hi = (i < n - 2 ? pos[i + 1] : 100) - 4;
+      pos[i] = Math.max(lo, Math.min(hi, v)); render();
+    }
+    function xPct(ev) { var r = stage.getBoundingClientRect(); return (ev.clientX - r.left) / r.width * 100; }
+    function nearest(x) {
+      var best = 0, d = Infinity;
+      for (var i = 0; i < pos.length; i++) { var dd = Math.abs(pos[i] - x); if (dd < d) { d = dd; best = i; } }
+      return best;
+    }
+    var active = null;
+    stage.addEventListener('pointerdown', function (ev) {
+      if (ev.button) { return; }
+      var x = xPct(ev); active = nearest(x); setPos(active, x);
+      try { stage.setPointerCapture(ev.pointerId); } catch (err) {}
+      ev.preventDefault();
+    });
+    stage.addEventListener('pointermove', function (ev) { if (active !== null) { setPos(active, xPct(ev)); } });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (name) {
+      stage.addEventListener(name, function () { active = null; });
+    });
+    handles.forEach(function (hd, i) {
+      hd.addEventListener('keydown', function (ev) {
+        if (ev.key === 'ArrowLeft') { setPos(i, pos[i] - 2); ev.preventDefault(); }
+        if (ev.key === 'ArrowRight') { setPos(i, pos[i] + 2); ev.preventDefault(); }
+      });
+    });
+    render();
+    fig.className += ' ready';
+  }
+  function run() { Array.prototype.forEach.call(document.querySelectorAll('.p2-cmp'), init); }
+  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', run); } else { run(); }
 })();
 </script>
 
@@ -434,7 +524,6 @@ Using a full convolution when constructing the combined DoG kernel preserves the
 
 </div>
 
-
 The Gaussian-smoothed edge image is cleaner than the finite-difference edge image because smoothing reduces small high-frequency variations before differentiation. The main edges remain, while many weaker responses are suppressed. This is the main practical advantage I observe from adding the Gaussian filter before the derivative.
 
 ## Part 2: Fun with Frequencies
@@ -512,20 +601,13 @@ As the sharpening amount increases from $\alpha=0.5$ to $\alpha=5$, the high-fre
 
 <p class="p2-cap">Decomposing the Taj Mahal image into low and high spatial frequencies</p>
 
-<div class="p2-grid c3">
-  <figure>
-    <img src="/images/cs180/proj2/image/Part_2_1/lobos.jpg" alt="Original" loading="lazy">
-    <figcaption>Point Lobos: Original</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj2/output/Part_2_1/lobos_blur_5.jpg" alt="Blurred, then sharpened" loading="lazy">
-    <figcaption>Point Lobos: Blurred, Then Sharpened</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj2/output/Part_2_1/lobos_5.jpg" alt="Sharpened" loading="lazy">
-    <figcaption>Point Lobos: Sharpened</figcaption>
-  </figure>
-</div>
+<figure class="p2-cmp" data-labels="Original|Blurred, then sharpened|Sharpened">
+  <img src="/images/cs180/proj2/image/Part_2_1/lobos.jpg" alt="Point Lobos, original">
+  <img src="/images/cs180/proj2/output/Part_2_1/lobos_blur_5.jpg" alt="Point Lobos, blurred then sharpened">
+  <img src="/images/cs180/proj2/output/Part_2_1/lobos_5.jpg" alt="Point Lobos, sharpened">
+  <figcaption>Point Lobos: drag the two handles to compare the original, the blurred-then-sharpened image, and the sharpened image</figcaption>
+</figure>
+
 #### For evaluation, pick a sharp image, blur it, and then try to sharpen it again. Compare the original and the sharpened image and report your observations.
 
 <p class="p2-cap">Sharp → blur → sharpen-back experiment on Lobos</p>
@@ -546,34 +628,25 @@ Because the sharpening equation can produce values below $0$ or above $1$, the r
 
 #### More sharpening examples
 
-<div class="p2-grid c2 medium">
-  <figure>
-    <img src="/images/cs180/proj2/image/Part_2_1/calacademy.jpg" alt="California Academy of Sciences: Original" loading="lazy">
-    <figcaption>California Academy of Sciences: Original</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj2/output/Part_2_1/calacademy_5.jpg" alt="California Academy of Sciences: Sharpened" loading="lazy">
-    <figcaption>California Academy of Sciences: Sharpened</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj2/image/Part_2_1/redwood.jpg" alt="Redwood: original" loading="lazy">
-    <figcaption>Henry Cowell Redwoods State Park: Original</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj2/output/Part_2_1/redwood_5.jpg" alt="Redwood: sharpened" loading="lazy">
-    <figcaption>Henry Cowell Redwoods State Park: Sharpened</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj2/image/Part_2_1/yosemite.jpg" alt="Yosemite National Park: Original" loading="lazy">
-    <figcaption>Yosemite National Park: Original</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj2/output/Part_2_1/yosemite_5.jpg" alt="Yosemite National Park: Sharpened" loading="lazy">
-    <figcaption>Yosemite National Park: Sharpened</figcaption>
-  </figure>
-</div>
+Drag the handle on each image to compare the original (left) with the sharpened result (right).
 
-<p class="p2-cap">Original (left) and sharpened (right) for three additional images</p>
+<figure class="p2-cmp" data-labels="Original|Sharpened">
+  <img src="/images/cs180/proj2/image/Part_2_1/calacademy.jpg" alt="California Academy of Sciences, original">
+  <img src="/images/cs180/proj2/output/Part_2_1/calacademy_5.jpg" alt="California Academy of Sciences, sharpened">
+  <figcaption>California Academy of Sciences</figcaption>
+</figure>
+
+<figure class="p2-cmp" data-labels="Original|Sharpened">
+  <img src="/images/cs180/proj2/image/Part_2_1/redwood.jpg" alt="Henry Cowell Redwoods State Park, original">
+  <img src="/images/cs180/proj2/output/Part_2_1/redwood_5.jpg" alt="Henry Cowell Redwoods State Park, sharpened">
+  <figcaption>Henry Cowell Redwoods State Park</figcaption>
+</figure>
+
+<figure class="p2-cmp" data-labels="Original|Sharpened">
+  <img src="/images/cs180/proj2/image/Part_2_1/yosemite.jpg" alt="Yosemite National Park, original">
+  <img src="/images/cs180/proj2/output/Part_2_1/yosemite_5.jpg" alt="Yosemite National Park, sharpened">
+  <figcaption>Yosemite National Park</figcaption>
+</figure>
 
 ### Part 2.2: Hybrid Images
 
