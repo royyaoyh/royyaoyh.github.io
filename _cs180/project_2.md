@@ -16,6 +16,32 @@ window.MathJax = {
 </script>
 <script id="MathJax-script" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
 
+<style>
+/* ---- Project 2 page styles (scoped with p2- prefixes) ---- */
+.page__content h3, article h3 { font-size: 1.45em; margin-top: 2em; }
+.page__content h4, article h4 { font-size: 1.2em; margin-top: 1.6em; }
+.p2-grid { --n: 3; --g: 14px; display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: var(--g); margin: 1.4em auto 0.6em; }
+.p2-grid figure { display: block; margin: 0; min-width: 0; text-align: center; flex: 0 0 calc((100% - (var(--n) - 1) * var(--g)) / var(--n)); }
+.p2-grid figure.w2 { flex-basis: calc(2 * (100% - (var(--n) - 1) * var(--g)) / var(--n) + var(--g)); }
+.p2-grid img { display: block; width: 100%; height: auto; margin: 0; border-radius: 3px; }
+.p2-grid figcaption { margin: 0.45em 0 0; font-size: 0.85em; font-style: italic; line-height: 1.35; color: #555; text-align: center; }
+.p2-grid.c1 { --n: 1; }
+.p2-grid.c2 { --n: 2; }
+.p2-grid.c3 { --n: 3; }
+.p2-grid.c4 { --n: 4; }
+.p2-grid.narrow { max-width: 640px; }
+.p2-grid.medium { max-width: 820px; }
+.p2-cap { text-align: center; font-style: italic; font-size: 0.9em; color: #555; margin: 0.2em 0 1.6em; }
+.p2-table { width: auto !important; display: table !important; margin: 1em auto 1.4em !important; border-collapse: collapse; }
+.p2-table th, .p2-table td { text-align: center !important; padding: 0.45em 1.8em; white-space: nowrap; }
+.p2-note { border-left: 4px solid #6f97c9; background: #f4f7fb; padding: 0.7em 1.1em; margin: 1.4em 0; border-radius: 0 4px 4px 0; }
+.p2-note p:last-child, .p2-note ol:last-child { margin-bottom: 0; }
+.p2-note ol { margin-top: 0.4em; }
+details.p2-code { margin: 1.2em 0; padding: 0.5em 1em; border: 1px solid #e2e2e2; border-radius: 6px; background: #fafafa; }
+details.p2-code summary { cursor: pointer; }
+@media (max-width: 560px) { .p2-grid.c3, .p2-grid.c4 { --n: 2; } }
+</style>
+
 ## Overview
 
 This project is about understanding images as 2D signals and seeing how convolution and frequency filtering can be used for edges, sharpening, hybrid images, and seamless blending. I started from implementing convolution myself, then used derivatives and Gaussian smoothing to build better edge detectors. In the second half, I worked with high and low spatial frequencies to sharpen images, create hybrid images, and finally blend different images together with Gaussian and Laplacian stacks.
@@ -26,7 +52,7 @@ This project is about understanding images as 2D signals and seeing how convolut
 
 #### 4 loops
 
-[include the exact code as required]
+The full code for both implementations is in the collapsible block at the end of this section.
 
 We loop through the image pixel by pixel, then we iterate through the kernel. In the four-loop version, the outer two loops choose the output pixel location, while the inner two loops iterate over every element of the kernel. For each output pixel, I multiply the overlapping image values by the corresponding kernel values and add them together.
 
@@ -60,62 +86,67 @@ I used NumPy operations only for my from-scratch implementations. `np.flip` hand
 
 #### Runtime analysis
 
-Runtime analysis: 4 loops, where each is horizontal edge detector filter, vertical edge detector filter, box filter
+**4 loops**, timed on the horizontal edge detector, the vertical edge detector, and the box filter:
 
-| Filter | Runtime (s) |
-|---|---:|
-| Horizontal edge detector | 23.0980164000066 |
-| Vertical edge detector | 25.615388899997924 |
-| Box filter | 16.682653500000015 |
+<table class="p2-table" style="width:auto; display:table; margin:1em auto;">
+  <thead><tr><th>Filter</th><th>Runtime (s)</th></tr></thead>
+  <tbody>
+    <tr><td>Horizontal edge detector</td><td>23.0980</td></tr>
+    <tr><td>Vertical edge detector</td><td>25.6154</td></tr>
+    <tr><td>Box filter</td><td>16.6827</td></tr>
+  </tbody>
+</table>
 
 The average runtime of these three four-loop runs is about $21.80$ seconds. The box filter is faster in this particular test, but the important comparison is between the implementation strategies rather than between the three filters themselves.
 
-Runtime analysis: 2 loops: where each is horizontal edge detector filter, vertical edge detector filter, box filter
+**2 loops**, timed on the same three filters:
 
-| Filter | Runtime (s) |
-|---|---:|
-| Horizontal edge detector | 16.189378600001 |
-| Vertical edge detector | 16.10461409999698 |
-| Box filter | 15.917823700001 |
+<table class="p2-table" style="width:auto; display:table; margin:1em auto;">
+  <thead><tr><th>Filter</th><th>Runtime (s)</th></tr></thead>
+  <tbody>
+    <tr><td>Horizontal edge detector</td><td>16.1894</td></tr>
+    <tr><td>Vertical edge detector</td><td>16.1046</td></tr>
+    <tr><td>Box filter</td><td>15.9178</td></tr>
+  </tbody>
+</table>
 
-The average runtime drops to about $16.07$ seconds. This is about $21.8\,/\,16.1 \approx 1.36\times$ faster than the four-loop implementation in my measurements. The mathematical operation is the same, but using NumPy's array operations avoids executing the innermost arithmetic directly in Python.
+The average runtime drops to about $16.07$ seconds. This is about $$21.8\,/\,16.1 \approx 1.36\times$$ faster than the four-loop implementation in my measurements. The mathematical operation is the same, but using NumPy's array operations avoids executing the innermost arithmetic directly in Python.
 
-Runtime analysis library given convolve2d function: where each is horizontal edge detector filter, vertical edge detector filter, box filter
+**Library `convolve2d`**, timed on the same three filters:
 
-| Filter | Runtime (s) |
-|---|---:|
-| Horizontal edge detector | 0.07488610000291374 |
-| Vertical edge detector | 0.0729940000019269 |
-| Box filter | 0.08236240000405814 |
+<table class="p2-table" style="width:auto; display:table; margin:1em auto;">
+  <thead><tr><th>Filter</th><th>Runtime (s)</th></tr></thead>
+  <tbody>
+    <tr><td>Horizontal edge detector</td><td>0.0749</td></tr>
+    <tr><td>Vertical edge detector</td><td>0.0730</td></tr>
+    <tr><td>Box filter</td><td>0.0824</td></tr>
+  </tbody>
+</table>
 
 The library implementation is dramatically faster, with an average of about $0.0767$ seconds. Compared with my two-loop implementation, the measured speedup is roughly $16.07/0.0767 \approx 209\times$. This illustrates why optimized numerical libraries are useful for image processing: the operation itself is simple, but doing billions of small Python-level operations is expensive.
 
 #### Results
 
-<div style="display: flex; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/image/Part_1_1/me_gray.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Input grayscale image</figcaption>
+<div class="p2-grid c4">
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_1_1/me_gray.jpg" alt="Input grayscale image" loading="lazy">
+    <figcaption>Input grayscale image</figcaption>
   </figure>
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_1_1/me_gray_box.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">9×9 box filter</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_1_1/me_gray_box.jpg" alt="9×9 box filter" loading="lazy">
+    <figcaption>9×9 box filter</figcaption>
   </figure>
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_1_1/me_gray_hor.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Horizontal derivative</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_1_1/me_gray_hor.jpg" alt="Horizontal derivative" loading="lazy">
+    <figcaption>Horizontal derivative</figcaption>
   </figure>
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_1_1/me_gray_ver.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Vertical derivative</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_1_1/me_gray_ver.jpg" alt="Vertical derivative" loading="lazy">
+    <figcaption>Vertical derivative</figcaption>
   </figure>
 </div>
-<p style="text-align:center; font-style: italic; margin-top: 0;">Self image with box and finite-difference filters</p>
 
-<div style="text-align:center; margin: 12px 0;">
-  <img src="/images/cs180/proj2/output/Part_1_1/me_gray_box.jpg" style="width: 55%;">
-</div>
-<p style="text-align:center; font-style: italic; margin-top: 0;">9×9 box-filter result</p>
+<p class="p2-cap">Self image with box and finite-difference filters</p>
 
 The box filter averages a local neighborhood. For a $9\times9$ box filter, each coefficient is
 
@@ -127,14 +158,18 @@ so the filter replaces each pixel with the average of the $81$ values in its nei
 
 The derivative filters instead respond to changes between neighboring pixels. The horizontal and vertical outputs therefore emphasize different edge orientations. This also demonstrates an important distinction between smoothing and differentiation: the box filter averages nearby values, while the derivative filters measure local changes.
 
-Keynote:
+<div class="p2-note" markdown="1">
+
+**Keynote**
 
 1. We need to center the filter so that the center of the filter is at the pixel we are looking at. and flip the filter to achieve convolution (using the strict mathematical convention)
-2. We do convolution thats the same as convolve2d mode="same". Here we did zero padding
+2. We do convolution thats the same as `convolve2d` with `mode="same"`. Here we did zero padding
+
+</div>
 
 For the boundary, `mode="same"` keeps the output the same size as the input while still computing a result near the edge. My implementation uses zero padding, so values outside the image are treated as zero. This matters because the kernel is only partially supported near the border, which can make edge pixels look different from interior pixels.
 
-<details>
+<details class="p2-code" markdown="1">
 <summary><strong>Code: my 4-loop and 2-loop convolution implementations</strong></summary>
 
 ```python
@@ -219,22 +254,22 @@ The only functional correction I made to the notebook code above is the final `r
 
 I used `im = np.hypot(ver, hor)` to get the magnitude of the horizontal and vertical derivative
 
-<div style="display: flex; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
-  <figure style="width: 31%; margin: 0;">
-    <img src="/images/cs180/proj2/output/supplement/cameraman_hor.png" style="width: 100%;">
-    <figcaption style="text-align: center;">$D_x$: horizontal derivative</figcaption>
+<div class="p2-grid c2 narrow">
+  <figure>
+    <img src="/images/cs180/proj2/output/supplement/cameraman_hor.png" alt="D_x: horizontal derivative" loading="lazy">
+    <figcaption>$D_x$: horizontal derivative</figcaption>
   </figure>
-  <figure style="width: 31%; margin: 0;">
-    <img src="/images/cs180/proj2/output/supplement/cameraman_ver.png" style="width: 100%;">
-    <figcaption style="text-align: center;">$D_y$: vertical derivative</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/supplement/cameraman_ver.png" alt="D_y: vertical derivative" loading="lazy">
+    <figcaption>$D_y$: vertical derivative</figcaption>
   </figure>
-  <figure style="width: 31%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_1_2/cameraman_raw_edge.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Gradient magnitude before thresholding</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_1_2/cameraman_raw_edge.png" alt="Gradient magnitude before thresholding" loading="lazy">
+    <figcaption>Gradient magnitude before thresholding</figcaption>
   </figure>
-  <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_1_2/cameraman_thres.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Binarized edge image</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_1_2/cameraman_thres.png" alt="Binarized edge image" loading="lazy">
+    <figcaption>Binarized edge image</figcaption>
   </figure>
 </div>
 
@@ -268,22 +303,27 @@ $$
 
 The threshold is a qualitative tradeoff. A threshold that is too low keeps small changes and noise, while a threshold that is too high removes weak but real edges. I chose the threshold to suppress much of the noise while retaining the main edges in the cameraman image.
 
-
-###
-<div style="display: flex; gap: 10px; margin-bottom: 6px;">
-  <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/supplement/cameraman_gauss_thres.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Binarized gradient magnitude after Gaussian smoothing</figcaption>
+<div class="p2-grid c2 narrow">
+  <figure>
+    <img src="/images/cs180/proj2/output/supplement/cameraman_gauss_thres.png" alt="Binarized gradient magnitude after Gaussian smoothing" loading="lazy">
+    <figcaption>Binarized gradient magnitude after Gaussian smoothing</figcaption>
   </figure>
-  <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_1_2/cameraman_thres.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Finite-difference binarized edge image</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_1_2/cameraman_thres.png" alt="Finite-difference binarized edge image" loading="lazy">
+    <figcaption>Finite-difference binarized edge image</figcaption>
   </figure>
 </div>
-<p style="text-align:center; font-style: italic; margin-top: 0;">Comparison of edge maps before and after Gaussian smoothing</p>
- Part 1.3: Derivative of Gaussian (DoG) Filter
 
-I used kernel_1d = cv.getGaussianKernel(5, 1.0) kernel_2d = kernel_1d * kernel_1d.T to create a 2D Gaussian kernel.
+<p class="p2-cap">Comparison of edge maps before and after Gaussian smoothing</p>
+
+### Part 1.3: Derivative of Gaussian (DoG) Filter
+
+I used the following to create a 2D Gaussian kernel:
+
+```python
+kernel_1d = cv.getGaussianKernel(5, 1.0)
+kernel_2d = kernel_1d * kernel_1d.T
+```
 
 The 2D Gaussian is separable, so taking the outer product of the 1D Gaussian vector with its transpose gives the full 2D filter. In general,
 
@@ -294,8 +334,6 @@ $$
 which is why the outer product works.
 
 A Gaussian filter is a low-pass filter: it reduces rapid pixel-to-pixel changes before the derivative is taken. This means that small noisy variations are less likely to appear as strong edges.
-
-[show mathematically that convolve with the image is the same as convolve with the filter]
 
 The key mathematical idea is associativity of convolution. If $I$ is the image, $G$ is the Gaussian filter, and $D_x$ is the derivative filter, then
 
@@ -311,33 +349,33 @@ $$
 
 Therefore, instead of first blurring the image and then applying the derivative, I can first combine the Gaussian and derivative filters into a single filter and convolve that result directly with the original image. This combined filter is the Derivative of Gaussian (DoG) filter.
 
-<div style="display: flex; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
-  <figure style="width: 19%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Gaussian-smoothed cameraman</figcaption>
+<div class="p2-grid c4">
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss.png" alt="Gaussian-smoothed cameraman" loading="lazy">
+    <figcaption>Gaussian-smoothed cameraman</figcaption>
   </figure>
-  <figure style="width: 19%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss_filtered_hor.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Gaussian + horizontal derivative</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss_filtered_hor.png" alt="Gaussian + horizontal derivative" loading="lazy">
+    <figcaption>Gaussian + horizontal derivative</figcaption>
   </figure>
-  <figure style="width: 19%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss_filtered_ver.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Gaussian + vertical derivative</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss_filtered_ver.png" alt="Gaussian + vertical derivative" loading="lazy">
+    <figcaption>Gaussian + vertical derivative</figcaption>
   </figure>
-  <figure style="width: 19%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss_filtered_filter.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Gradient result (filename-based identification)</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss_filtered_filter.png" alt="Gradient magnitude from the DoG filters" loading="lazy">
+    <figcaption>Gradient magnitude from the DoG filters</figcaption>
   </figure>
 </div>
 
-<div style="display: flex; gap: 10px; margin-bottom: 6px;">
-  <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_1_3/gauss_hor_kernal.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Horizontal DoG filter</figcaption>
+<div class="p2-grid c2 narrow">
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_1_3/gauss_hor_kernal.png" alt="Horizontal DoG filter" loading="lazy">
+    <figcaption>Horizontal DoG filter</figcaption>
   </figure>
-  <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_1_3/gauss_ver_kernal.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Vertical DoG filter</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_1_3/gauss_ver_kernal.png" alt="Vertical DoG filter" loading="lazy">
+    <figcaption>Vertical DoG filter</figcaption>
   </figure>
 </div>
 
@@ -347,7 +385,11 @@ The small differences around the borders are expected because the two implementa
 
 Compared with the original finite-difference result, the Gaussian-smoothed result should have fewer small noisy responses. The tradeoff is that very fine detail can also be removed because the Gaussian is intentionally suppressing high spatial frequencies before differentiation.
 
-Keynote: When convolving the kernel with the Gaussian filter, make sure to use mode="full" to not lose details from the image.
+<div class="p2-note" markdown="1">
+
+**Keynote:** When convolving the kernel with the Gaussian filter, make sure to use `mode="full"` to not lose details from the image.
+
+</div>
 
 Using a full convolution when constructing the combined DoG kernel preserves the complete support of the two filters before they are applied to the image. The resulting combined filter is larger than either filter alone because the convolution of two finite kernels increases their support.
 
@@ -394,82 +436,103 @@ After subtracting the original image by the sharpened blurred image, the origina
 
 This experiment shows an important limitation of sharpening. Sharpening is not a time machine: once the blur has removed high-frequency information, the missing information cannot be exactly reconstructed. The sharpening filter only increases the contrast of the high-frequency information that remains after blurring. As $\alpha$ increases, edges become more pronounced, but overly large values can also make noise and halos more visible.
 
-<div style="display: flex; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_1/taj_0.5.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Taj, $\alpha=0.5$</figcaption>
+<div class="p2-grid c4">
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_1/taj_0.5.jpg" alt="Taj, alpha=0.5" loading="lazy">
+    <figcaption>Taj, $\alpha=0.5$</figcaption>
   </figure>
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_1/taj_1.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Taj, $\alpha=1$</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_1/taj_1.jpg" alt="Taj, alpha=1" loading="lazy">
+    <figcaption>Taj, $\alpha=1$</figcaption>
   </figure>
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_1/taj_2.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Taj, $\alpha=2$</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_1/taj_2.jpg" alt="Taj, alpha=2" loading="lazy">
+    <figcaption>Taj, $\alpha=2$</figcaption>
   </figure>
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_1/taj_5.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Taj, $\alpha=5$</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_1/taj_5.jpg" alt="Taj, alpha=5" loading="lazy">
+    <figcaption>Taj, $\alpha=5$</figcaption>
   </figure>
 </div>
-<p style="text-align:center; font-style: italic; margin-top: 0;">Effect of increasing the sharpening amount</p>
+
+<p class="p2-cap">Effect of increasing the sharpening amount</p>
 
 As the sharpening amount increases from $\alpha=0.5$ to $\alpha=5$, the high-frequency component contributes more strongly to the final image. The lower values make a subtler change, while the larger values emphasize fine detail much more aggressively. This provides a direct visual demonstration of the role of $\alpha$ in the equation above.
 
-<div style="display: flex; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
-  <figure style="width: 31%; margin: 0;">
-    <img src="/images/cs180/proj2/image/Part_2_1/taj.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Original Taj Mahal</figcaption>
+<div class="p2-grid c3">
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_2_1/taj.jpg" alt="Original Taj Mahal" loading="lazy">
+    <figcaption>Original Taj Mahal</figcaption>
   </figure>
-  <figure style="width: 31%; margin: 0;">
-    <img src="/images/cs180/proj2/output/supplement/taj_blur.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Taj, Gaussian blurred</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/supplement/taj_blur.jpg" alt="Taj, Gaussian blurred" loading="lazy">
+    <figcaption>Taj, Gaussian blurred</figcaption>
   </figure>
-  <figure style="width: 31%; margin: 0;">
-    <img src="/images/cs180/proj2/output/supplement/taj_high_freq.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Taj, high-frequency component</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/supplement/taj_high_freq.jpg" alt="Taj, high-frequency component" loading="lazy">
+    <figcaption>Taj, high-frequency component</figcaption>
   </figure>
 </div>
-<p style="text-align:center; font-style: italic; margin-top: 0;">Decomposing the Taj Mahal image into low and high spatial frequencies</p>
 
+<p class="p2-cap">Decomposing the Taj Mahal image into low and high spatial frequencies</p>
 
-<div style="display: flex; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/image/Part_2_1/lobos.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Lobos, original sharp image</figcaption>
+<div class="p2-grid c3">
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_2_1/lobos.jpg" alt="Original" loading="lazy">
+    <figcaption>Original</figcaption>
   </figure>
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_1/lobos_blur_5.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Lobos, blurred</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_1/lobos_blur_5.jpg" alt="Blurred, then sharpened" loading="lazy">
+    <figcaption>Blurred, then sharpened</figcaption>
   </figure>
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_1/lobos_5.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Lobos, sharpened after blur</figcaption>
-  </figure>
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_1/calacademy_5.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">CalAcademy, sharpened</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_1/lobos_5.jpg" alt="Sharpened" loading="lazy">
+    <figcaption>Sharpened</figcaption>
   </figure>
 </div>
-<div style="display: flex; gap: 10px; margin-bottom: 6px;">
-  <figure style="width: 31%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_1/redwood_5.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Redwood, sharpened</figcaption>
-  </figure>
-  <figure style="width: 31%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_1/yosemite_5.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Yosemite, sharpened</figcaption>
-  </figure>
-</div>
-<p style="text-align:center; font-style: italic; margin-top: 0;">Sharp → blur → sharpen-back experiment on Lobos, plus additional sharpening results</p>
+
+<p class="p2-cap">Sharp → blur → sharpen-back experiment on Lobos</p>
 
 The Lobos experiment is the direct evaluation requested in the project description: I start with the original sharp image, blur it, and then apply the sharpening operation to that blurred image. The sharpened result recovers some apparent edge contrast, but it does not become identical to the original because the blur has already removed high-frequency information.
 
-Keynote: always do np.clip or scale the image to the range from 0 to 1 before converting the floating points ot integers and multiplying by 255. This would cause integer overflow for example, a -1 value would be 255, which would add a lot of random color and pepper noise
+<div class="p2-note" markdown="1">
+
+**Keynote:** always do `np.clip` or scale the image to the range from 0 to 1 before converting the floating points ot integers and multiplying by 255. This would cause integer overflow for example, a -1 value would be 255, which would add a lot of random color and pepper noise
+
+</div>
 
 Because the sharpening equation can produce values below $0$ or above $1$, the result needs to be brought back into the valid image range before converting to `uint8`. Otherwise, negative values or values above the maximum can wrap or clip incorrectly during integer conversion. Using `np.clip(res,0,1)` before multiplying by $255$ is a safe way to handle this.
 
-The supplement folder contains the Taj blurred and Taj high-frequency images used above, so the required decomposition is now explicitly shown.
+#### More sharpening examples
+
+<div class="p2-grid c2 medium">
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_2_1/calacademy.jpg" alt="CalAcademy: original" loading="lazy">
+    <figcaption>CalAcademy: original</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_1/calacademy_5.jpg" alt="CalAcademy: sharpened" loading="lazy">
+    <figcaption>CalAcademy: sharpened</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_2_1/redwood.jpg" alt="Redwood: original" loading="lazy">
+    <figcaption>Redwood: original</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_1/redwood_5.jpg" alt="Redwood: sharpened" loading="lazy">
+    <figcaption>Redwood: sharpened</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_2_1/yosemite.jpg" alt="Yosemite: original" loading="lazy">
+    <figcaption>Yosemite: original</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_1/yosemite_5.jpg" alt="Yosemite: sharpened" loading="lazy">
+    <figcaption>Yosemite: sharpened</figcaption>
+  </figure>
+</div>
+
+<p class="p2-cap">Original (left) and sharpened (right) for three additional images</p>
 
 ### Part 2.2: Hybrid Images
 
@@ -497,8 +560,6 @@ The alignment is important because the high-frequency structure needs to corresp
 
 #### Frequency-domain analysis
 
-[Frequency domain of the high frequency, low frequency, and hybrid image]
-
 We notice in the low frequency image, most of the information is gathered in the middle cross while in high frequency image, most of the image is not on the axes, but on the quarters
 
 More precisely, after applying `fftshift`, low-frequency energy is concentrated near the center of the Fourier image because the center represents low spatial frequencies. High-frequency energy appears farther from the center. It does not have to be literally on the axes or in the quarters, but the important visual distinction is that the high-frequency component is farther from the center than the low-frequency component.
@@ -513,60 +574,59 @@ which makes both very strong low-frequency values and weaker high-frequency valu
 
 #### Cutoff frequency choice
 
-cutoff frequency choice:
+- **High frequency:** increase sigma → more information, decrease sigma → less information
+- **Low frequency:** increase sigma → less information, decrease sigma → more information
 
-High freq: increase sigma -> more information, decrease sigma -> less information
-Low frequency: increase sigma -> less information, decrease sigma -> more information
-
-The intuition is that $\sigma$ controls the width of the Gaussian blur. A larger $\sigma$ removes more high frequencies from the low-pass image, which makes the low-pass result smoother. For the high-pass component $I-G_\sigma*I$, a larger $\sigma$ means more of the original image is treated as high-frequency detail because the blur removes a wider range of frequencies.
+The intuition is that $\sigma$ controls the width of the Gaussian blur. A larger $\sigma$ removes more high frequencies from the low-pass image, which makes the low-pass result smoother. For the high-pass component $$I-G_\sigma*I$$, a larger $\sigma$ means more of the original image is treated as high-frequency detail because the blur removes a wider range of frequencies.
 
 Based on this rule, I tuned it that whenever I have my glass on, its the high frequency image while if I have my glass off, its the low frequency image. (Roy’s criteria)
 
 This criterion is based on the expected viewing distance. At close range, the fine details are available and the high-frequency image is easier to recognize. At farther distances, the image is effectively blurred by the limited resolution of the visual system, making the low-frequency interpretation more prominent.
 
-<div style="display: flex; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/image/Part_2_2/cat.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Cat input</figcaption>
+<div class="p2-grid c4">
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_2_2/cat.jpg" alt="Cat input" loading="lazy">
+    <figcaption>Cat input</figcaption>
   </figure>
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/image/Part_2_2/man.jpg" style="width: 100%;">
-    <figcaption style="text-align: center;">Man input</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_2_2/man.jpg" alt="Man input" loading="lazy">
+    <figcaption>Man input</figcaption>
   </figure>
-  <figure style="width: 46%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_2/catman.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Cat + man hybrid</figcaption>
-  </figure>
-</div>
-<p style="text-align:center; font-style: italic; margin-top: 0;">Hybrid result for the cat/man pair (filename-based pairing)</p>
-
-<div style="display: flex; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/image/Part_2_2/lian_headshot.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Lian</figcaption>
-  </figure>
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/image/Part_2_2/taffy_headshot.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Taffy</figcaption>
-  </figure>
-  <figure style="width: 46%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_2/taffy_lian.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Taffy + Lian hybrid</figcaption>
+  <figure class="w2">
+    <img src="/images/cs180/proj2/output/Part_2_2/catman.png" alt="Cat + man hybrid" loading="lazy">
+    <figcaption>Cat + man hybrid</figcaption>
   </figure>
 </div>
 
-<div style="display: flex; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/image/Part_2_2/hu_ge.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Hu Ge</figcaption>
+<p class="p2-cap">Hybrid result for the cat/man pair</p>
+
+<div class="p2-grid c4">
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_2_2/lian_headshot.png" alt="Lian" loading="lazy">
+    <figcaption>Lian</figcaption>
   </figure>
-  <figure style="width: 23%; margin: 0;">
-    <img src="/images/cs180/proj2/image/Part_2_2/pig.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Pig</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_2_2/taffy_headshot.png" alt="Taffy" loading="lazy">
+    <figcaption>Taffy</figcaption>
   </figure>
-  <figure style="width: 46%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_2/hu_pig.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Hu Ge + pig hybrid</figcaption>
+  <figure class="w2">
+    <img src="/images/cs180/proj2/output/Part_2_2/taffy_lian.png" alt="Taffy + Lian hybrid" loading="lazy">
+    <figcaption>Taffy + Lian hybrid</figcaption>
+  </figure>
+</div>
+
+<div class="p2-grid c4">
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_2_2/hu_ge.png" alt="Hu Ge" loading="lazy">
+    <figcaption>Hu Ge</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/image/Part_2_2/pig.png" alt="Pig" loading="lazy">
+    <figcaption>Pig</figcaption>
+  </figure>
+  <figure class="w2">
+    <img src="/images/cs180/proj2/output/Part_2_2/hu_pig.png" alt="Hu Ge + pig hybrid" loading="lazy">
+    <figcaption>Hu Ge + pig hybrid</figcaption>
   </figure>
 </div>
 
@@ -574,42 +634,42 @@ These examples demonstrate how changing the input pair changes the visual effect
 
 #### Full frequency analysis example
 
-For the Lian/Taffy example, the filenames indicate an aligned-input pair and separate frequency-domain visualizations. I use this as the main process example because it has the largest set of intermediate results.
+I use the Lian/Taffy pair as the main worked example because it has the largest set of intermediate results: the aligned inputs, their Fourier magnitudes, and the spectra of the high-pass, low-pass, and hybrid images.
 
-<div style="display: flex; gap: 10px; margin-bottom: 6px;">
-  <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_2/aligned_lian.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Aligned Lian</figcaption>
+<div class="p2-grid c2 narrow">
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_2/aligned_lian.png" alt="Aligned Lian" loading="lazy">
+    <figcaption>Aligned Lian</figcaption>
   </figure>
-  <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_2/aligned_taffy.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Aligned Taffy</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_2/aligned_taffy.png" alt="Aligned Taffy" loading="lazy">
+    <figcaption>Aligned Taffy</figcaption>
   </figure>
 </div>
 
-<div style="display: flex; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
-  <figure style="width: 31%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/lian.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Lian Fourier magnitude</figcaption>
+<div class="p2-grid c3">
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/lian.png" alt="Lian Fourier magnitude" loading="lazy">
+    <figcaption>Lian Fourier magnitude</figcaption>
   </figure>
-  <figure style="width: 31%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/taffy.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Taffy Fourier magnitude</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/taffy.png" alt="Taffy Fourier magnitude" loading="lazy">
+    <figcaption>Taffy Fourier magnitude</figcaption>
   </figure>
-  <figure style="width: 31%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/high.png" style="width: 100%;">
-    <figcaption style="text-align: center;">High-frequency spectrum</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/high.png" alt="High-frequency spectrum" loading="lazy">
+    <figcaption>High-frequency spectrum</figcaption>
   </figure>
 </div>
 
-<div style="display: flex; gap: 10px; margin-bottom: 6px;">
-  <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/low.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Low-frequency spectrum</figcaption>
+<div class="p2-grid c3">
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/low.png" alt="Low-frequency spectrum" loading="lazy">
+    <figcaption>Low-frequency spectrum</figcaption>
   </figure>
-  <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/hybrid.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Hybrid spectrum</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_2/freq_domain/hybrid.png" alt="Hybrid spectrum" loading="lazy">
+    <figcaption>Hybrid spectrum</figcaption>
   </figure>
 </div>
 
@@ -617,15 +677,13 @@ The low-frequency Fourier magnitude should show its strongest energy near the ce
 
 <!-- MISSING/VERIFY: the rubric asks for the original and aligned images for the one fully analyzed hybrid; these are present for Lian/Taffy above. -->
 
-## Part 2.3: Gaussian and Laplacian Stacks
-
-[display the result]
+### Part 2.3: Gaussian and Laplacian Stacks
 
 A Gaussian stack and Laplacian stack keep the same image dimensions at every level. This is the same implementation as Project 1 except there is no downsampling.
 
-I use gaussian_stack(img, sigma, levels=4), laplacian_stack(g) where level is the number of layers and sigma is the standard deviation of the Gaussian distribution of the filter. The output order of gaussian_stack is would be original, blurred once, blurred twice … fine detail, …, coarsest/general shape. The output order of laplacian_stack is bandpass filter 1 (greatest detail), bandpass filter 2 (less, but still great detail), … the same last layer of the Gaussian stack.
+I use `gaussian_stack(img, sigma, levels=4)` and `laplacian_stack(g)`, where level is the number of layers and sigma is the standard deviation of the Gaussian distribution of the filter. The output order of `gaussian_stack` is would be original, blurred once, blurred twice … fine detail, …, coarsest/general shape. The output order of `laplacian_stack` is bandpass filter 1 (greatest detail), bandpass filter 2 (less, but still great detail), … the same last layer of the Gaussian stack.
 
-For the Gaussian stack, let $G_0=I$ and define successive levels as
+For the Gaussian stack, let $$G_0=I$$ and define successive levels as
 
 $$
 G_{i+1}=G_\sigma * G_i.
@@ -647,14 +705,14 @@ $$
 
 Thus, the Laplacian stack divides the image into different frequency bands. The first layer contains the finest details, later layers contain progressively coarser structures, and the final residual stores the lowest-frequency content.
 
-<div style="display: flex; gap: 10px; margin-bottom: 6px;">
-  <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_3/graphs/laplacian_gaussian.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Gaussian/Laplacian stack visualization</figcaption>
+<div class="p2-grid c1 medium">
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_3/graphs/laplacian_gaussian.png" alt="Gaussian/Laplacian stack visualization" loading="lazy">
+    <figcaption>Gaussian/Laplacian stack visualization</figcaption>
   </figure>
-  <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_3/graphs/oraple.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Oraple stack result / Figure 3.42-style visualization</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_3/graphs/oraple.png" alt="Oraple stack result / Figure 3.42-style visualization" loading="lazy">
+    <figcaption>Oraple stack result / Figure 3.42-style visualization</figcaption>
   </figure>
 </div>
 
@@ -662,7 +720,7 @@ The useful property of the Laplacian stack is that it gives me a way to manipula
 
 The implementation is deliberately a stack rather than a pyramid: no level is downsampled. This means every level can be directly combined with a same-size mask and with the corresponding level from another image.
 
-## Part 2.4: Multiresolution Blending (a.k.a. the oraple!)
+### Part 2.4: Multiresolution Blending (a.k.a. the oraple!)
 
 The goal here is to use the Gaussian and Laplacian stacks to create a smooth transition between two images rather than making a visibly abrupt cut.
 
@@ -676,7 +734,7 @@ M(x,y)=
 \end{cases}
 $$
 
-The important step is that I also create a Gaussian stack of the mask. Let $M_i$ be the Gaussian-blurred mask at level $i$. Then for the corresponding Laplacian bands $L^A_i$ and $L^B_i$, I blend them using
+The important step is that I also create a Gaussian stack of the mask. Let $$M_i$$ be the Gaussian-blurred mask at level $i$. Then for the corresponding Laplacian bands $$L^A_i$$ and $$L^B_i$$, I blend them using
 
 $$
 L_i^{blend}=M_i\,L^A_i+(1-M_i)\,L^B_i.
@@ -686,47 +744,49 @@ Finally, the blended image is reconstructed by summing the blended Laplacian lev
 
 This works because the mask changes slowly at coarse frequency bands. A hard step in the original mask becomes a smooth transition after Gaussian filtering, so the seam is not equally sharp at every frequency.
 
-Fixing Seam: I used two ways to fix seam:
+**Fixing Seam:** I used two ways to fix seam:
 
-1. Laplacian pyramid sigma*2**level for each level. This captures a broader range and makes coarser levels capture more detail and make the bandpass spam a larger spam of the spectrum instead of making all low frequency structure fit in the residual image
+1. Laplacian pyramid `sigma*2**level` for each level. This captures a broader range and makes coarser levels capture more detail and make the bandpass spam a larger spam of the spectrum instead of making all low frequency structure fit in the residual image
 2. Making the Gaussian mask filter instead of a binary filter for the finest detail layer solves the seam issue significantly
 
 The first idea makes the effective blur scale grow with the level, so the coarser bands represent broader spatial structures. The second is especially important for eliminating the obvious hard boundary: instead of multiplying the finest-level details by a binary left/right switch, a smoothly varying Gaussian mask gradually transfers detail from one image to the other.
 
-### Oraple
+#### Oraple
 
-<div style="text-align: center; margin-bottom: 6px;">
-  <img src="/images/cs180/proj2/output/Part_2_3/oraple.jpeg" style="width: 70%;">
+<div class="p2-grid c1" style="max-width: 560px">
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_3/oraple.jpeg" alt="Apple + orange multiresolution blend" loading="lazy">
+    <figcaption>Apple + orange multiresolution blend</figcaption>
+  </figure>
 </div>
-<p style="text-align:center; font-style: italic; margin-top: 0;">Apple + orange multiresolution blend</p>
 
 The Oraple is the classic demonstration because the straight seam can be made visually smooth even though the left and right halves originally come from different images. The low-frequency bands transition gradually, while the Laplacian bands preserve local texture and edge information around the seam.
 
-### Custom blend 1: Half-peeled shrimp
+#### Custom blend 1: Half-peeled shrimp
 
-<div style="display: flex; gap: 10px; margin-bottom: 6px;">
-  <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_4/half_peeled_shrimp.jpeg" style="width: 100%;">
-    <figcaption style="text-align: center;">Half-peeled shrimp blend</figcaption>
+<div class="p2-grid c2 medium">
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_4/half_peeled_shrimp.jpeg" alt="Half-peeled shrimp blend" loading="lazy">
+    <figcaption>Half-peeled shrimp blend</figcaption>
   </figure>
-  <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_4/half_peeled_shrimp.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Half-peeled shrimp blend, alternate output</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_4/half_peeled_shrimp.png" alt="Half-peeled shrimp blend, alternate output" loading="lazy">
+    <figcaption>Half-peeled shrimp blend, alternate output</figcaption>
   </figure>
 </div>
 
 This example shows how the same multiresolution blending idea can be used outside the textbook apple/orange example. The mask determines which parts of each input contribute to the final result, while the Gaussian stack of the mask softens the transition.
 
-### Custom blend 2: Hamster + Dafu
+#### Custom blend 2: Hamster + Dafu
 
-<div style="display: flex; gap: 10px; margin-bottom: 6px;">
-  <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_4/hamster_dafu.jpeg" style="width: 100%;">
-    <figcaption style="text-align: center;">Hamster + Dafu blend</figcaption>
+<div class="p2-grid c2 medium">
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_4/hamster_dafu.jpeg" alt="Hamster + Dafu blend" loading="lazy">
+    <figcaption>Hamster + Dafu blend</figcaption>
   </figure>
-  <figure style="width: 48%; margin: 0;">
-    <img src="/images/cs180/proj2/output/Part_2_4/hamster_dafu.png" style="width: 100%;">
-    <figcaption style="text-align: center;">Hamster + Dafu blend, alternate output</figcaption>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_2_4/hamster_dafu.png" alt="Hamster + Dafu blend, alternate output" loading="lazy">
+    <figcaption>Hamster + Dafu blend, alternate output</figcaption>
   </figure>
 </div>
 
@@ -734,13 +794,15 @@ The custom examples demonstrate the more creative side of multiresolution blendi
 
 <!-- MISSING/VERIFY: explicitly show the irregular mask itself for the custom example. The filenames alone cannot prove which custom blend uses the irregular mask. -->
 
-Keynote:
+<div class="p2-note" markdown="1">
 
-Cv reads in BGR order while plt plot in RGB order. You have to reverse the color channels otherwise you would get color flipped image!
+**Keynote:** Cv reads in BGR order while plt plot in RGB order. You have to reverse the color channels otherwise you would get color flipped image!
+
+</div>
 
 This matters whenever I move an image between OpenCV and Matplotlib. OpenCV conventionally loads color images as BGR, while Matplotlib expects RGB for display. If I forget to reverse the channels, the output can have visibly incorrect colors even though the underlying filtering operation is correct.
 
-## Part 2.4: Results and Creative Exploration
+#### Results and Creative Exploration
 
 The custom results also helped show why the Gaussian mask is useful. With a binary mask, the transition occurs at one abrupt boundary. With a Gaussian stack, the transition width changes with scale: fine details transition relatively locally, while coarse structures transition over a wider spatial region. This makes the seam much less noticeable.
 
@@ -754,10 +816,9 @@ The most important connection for me was seeing the same idea appear repeatedly 
 
 ## Image Sources
 
-The custom-source notes from my draft are:
+Sources for the custom blend images:
 
-- 自制盐豆大福 自从在日本吃过后就一直念念不忘 黑豆微... https://xhslink.cn/o/8MZ1LTafNCk
-- 把小老鼠擀成饺子皮需要几步 - https://xhslink.cn/o/6EXZZQvzBg4
-- https://x.com/watabieni/status/1759877676658233570
-- https://xhslink.cn/m/4HHanyJsyJ
-
+- [自制盐豆大福 自从在日本吃过后就一直念念不忘 黑豆微...](https://xhslink.cn/o/8MZ1LTafNCk)
+- [把小老鼠擀成饺子皮需要几步](https://xhslink.cn/o/6EXZZQvzBg4)
+- <https://x.com/watabieni/status/1759877676658233570>
+- <https://xhslink.cn/m/4HHanyJsyJ>
