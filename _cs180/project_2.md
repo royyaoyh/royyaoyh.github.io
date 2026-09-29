@@ -18,8 +18,9 @@ window.MathJax = {
 
 <style>
 /* ---- Project 2 page styles (scoped with p2- prefixes) ---- */
-.page__content h2, article h2 { font-size: 1.9em !important; }
-.page__content h3, article h3 { font-size: 1.5em !important; margin-top: 2em; }
+.page__title, h1.page__title, article h1, .page__content h1 { font-size: 2.4em !important; }
+.page__content h2, article h2 { font-size: 1.8em !important; }
+.page__content h3, article h3 { font-size: 1.45em !important; margin-top: 2em; }
 .page__content h4, article h4 { font-size: 1.2em !important; margin-top: 1.6em; }
 .p2-grid { --n: 3; --g: 14px; display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: var(--g); margin: 1.4em auto 0.6em; }
 .p2-grid figure { display: block; margin: 0; min-width: 0; text-align: center; flex: 0 0 calc((100% - (var(--n) - 1) * var(--g)) / var(--n)); }
@@ -53,8 +54,6 @@ This project is about understanding images as 2D signals and seeing how convolut
 
 #### 4 loops
 
-The full code for both implementations is in the collapsible block at the end of this section.
-
 We loop through the image pixel by pixel, then we iterate through the kernel. In the four-loop version, the outer two loops choose the output pixel location, while the inner two loops iterate over every element of the kernel. For each output pixel, I multiply the overlapping image values by the corresponding kernel values and add them together.
 
 The basic operation can be written as
@@ -64,6 +63,45 @@ O(i,j) = \sum_{m}\sum_{n} I(i-m,j-n)K(m,n),
 $$
 
 where $I$ is the image, $K$ is the filter, and $O$ is the output. The filter is flipped before applying the operation because convolution, under the strict mathematical convention, requires reversing the kernel in both dimensions.
+
+<details class="p2-code" markdown="1">
+<summary><strong>Code: 4-loop convolution</strong></summary>
+
+```python
+# 4 loops
+def convolve2d_4loops(image, ker):
+    img_rows, img_cols = image.shape
+    # flip the kernal
+    kernel = np.flip(ker)
+
+    k_rows, k_cols = kernel.shape
+
+    center_m = k_rows // 2
+    center_n = k_cols // 2
+
+    output = np.zeros((img_rows, img_cols))
+    height = output.shape[0]
+    width = output.shape[1]
+    
+    # iterate image rows
+    for i in range(height):
+        # iterate image columns
+        for j in range(width):
+            sum_val = 0.0
+            # iterate kernal rows
+            for m in range(k_rows):
+                # iterate kernal columns
+                for n in range(k_cols):
+                    row = i + m - center_m
+                    col = j + n - center_n
+                    if 0 <= row < img_rows and 0 <= col < img_cols:
+                        sum_val += image[row, col] * kernel[m, n]
+            output[i, j] = sum_val
+            
+    return output
+```
+
+</details>
 
 #### 2 loops
 
@@ -78,6 +116,55 @@ O(i,j)=\sum_{(m,n)\in \text{valid overlap}} I(m,n)K'(m,n),
 $$
 
 where $K'$ is the flipped kernel. With zero padding, the part of the kernel outside the image is equivalent to multiplying by zeros.
+
+<details class="p2-code" markdown="1">
+<summary><strong>Code: 2-loop convolution</strong></summary>
+
+```python
+# 2 loops
+
+def convolve_2d_2loops(image, ker):
+    img_rows, img_cols = image.shape
+    # flip the kernal
+    kernel = np.flip(ker)
+
+    k_rows, k_cols = kernel.shape
+
+    center_m = k_rows // 2
+    center_n = k_cols // 2
+
+    output = np.zeros((img_rows, img_cols))
+    height = output.shape[0]
+    width = output.shape[1]
+    
+    # iterate image rows
+    for i in range(height):
+        # iterate image columns
+        for j in range(width):
+            # pick the width and height range on the image
+            r_start = max(0, i - center_m)
+            r_end = min(img_rows, i + center_m + 1)
+
+            c_start = max(0, j - center_n)
+            c_end = min(img_cols, j + center_n + 1)
+
+            kr_start = r_start - (i - center_m)
+            kr_end = kr_start + (r_end - r_start)
+
+            kc_start = c_start - (j - center_n)
+            kc_end = kc_start + (c_end - c_start)
+
+            output[i, j] = np.sum(
+                image[r_start:r_end, c_start:c_end] *
+                kernel[kr_start:kr_end, kc_start:kc_end]
+            )
+
+    return output
+```
+
+The only functional correction I made to the notebook code above is the final `return output` in the two-loop function. Without it, the function finishes after assigning the output array but returns `None` to the caller.
+
+</details>
 
 #### What can you use for this section?
 
@@ -130,7 +217,7 @@ The library implementation is dramatically faster, with an average of about $0.0
 
 <div class="p2-grid c4">
   <figure>
-    <img src="/images/cs180/proj2/image/me_gray.jpg" alt="Input grayscale image" loading="lazy">
+    <img src="/images/cs180/proj2/image/me_grayscale.jpg" alt="Input grayscale image" loading="lazy">
     <figcaption>Input grayscale image</figcaption>
   </figure>
   <figure>
@@ -169,87 +256,6 @@ The derivative filters instead respond to changes between neighboring pixels. Th
 </div>
 
 For the boundary, `mode="same"` keeps the output the same size as the input while still computing a result near the edge. My implementation uses zero padding, so values outside the image are treated as zero. This matters because the kernel is only partially supported near the border, which can make edge pixels look different from interior pixels.
-
-<details class="p2-code" markdown="1">
-<summary><strong>Code: my 4-loop and 2-loop convolution implementations</strong></summary>
-
-```python
-# 4 loops
-def convolve2d_4loops(image, ker):
-    img_rows, img_cols = image.shape
-    # flip the kernal
-    kernel = np.flip(ker)
-
-    k_rows, k_cols = kernel.shape
-
-    center_m = k_rows // 2
-    center_n = k_cols // 2
-
-    output = np.zeros((img_rows, img_cols))
-    height = output.shape[0]
-    width = output.shape[1]
-    
-    # iterate image rows
-    for i in range(height):
-        # iterate image columns
-        for j in range(width):
-            sum_val = 0.0
-            # iterate kernal rows
-            for m in range(k_rows):
-                # iterate kernal columns
-                for n in range(k_cols):
-                    row = i + m - center_m
-                    col = j + n - center_n
-                    if 0 <= row < img_rows and 0 <= col < img_cols:
-                        sum_val += image[row, col] * kernel[m, n]
-            output[i, j] = sum_val
-            
-    return output
-
-# 2 loops
-
-def convolve_2d_2loops(image, ker):
-    img_rows, img_cols = image.shape
-    # flip the kernal
-    kernel = np.flip(ker)
-
-    k_rows, k_cols = kernel.shape
-
-    center_m = k_rows // 2
-    center_n = k_cols // 2
-
-    output = np.zeros((img_rows, img_cols))
-    height = output.shape[0]
-    width = output.shape[1]
-    
-    # iterate image rows
-    for i in range(height):
-        # iterate image columns
-        for j in range(width):
-            # pick the width and height range on the image
-            r_start = max(0, i - center_m)
-            r_end = min(img_rows, i + center_m + 1)
-
-            c_start = max(0, j - center_n)
-            c_end = min(img_cols, j + center_n + 1)
-
-            kr_start = r_start - (i - center_m)
-            kr_end = kr_start + (r_end - r_start)
-
-            kc_start = c_start - (j - center_n)
-            kc_end = kc_start + (c_end - c_start)
-
-            output[i, j] = np.sum(
-                image[r_start:r_end, c_start:c_end] *
-                kernel[kr_start:kr_end, kc_start:kc_end]
-            )
-
-    return output
-```
-
-The only functional correction I made to the notebook code above is the final `return output` in the two-loop function. Without it, the function finishes after assigning the output array but returns `None` to the caller.
-
-</details>
 
 ### Part 1.2: Finite Difference Operator
 
@@ -350,11 +356,7 @@ $$
 
 Therefore, instead of first blurring the image and then applying the derivative, I can first combine the Gaussian and derivative filters into a single filter and convolve that result directly with the original image. This combined filter is the Derivative of Gaussian (DoG) filter.
 
-<div class="p2-grid c4">
-  <figure>
-    <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss.png" alt="Gaussian-smoothed cameraman" loading="lazy">
-    <figcaption>Gaussian-smoothed cameraman</figcaption>
-  </figure>
+<div class="p2-grid c2 narrow">
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss_filtered_hor.png" alt="Gaussian + horizontal derivative" loading="lazy">
     <figcaption>Gaussian + horizontal derivative</figcaption>
@@ -362,6 +364,10 @@ Therefore, instead of first blurring the image and then applying the derivative,
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss_filtered_ver.png" alt="Gaussian + vertical derivative" loading="lazy">
     <figcaption>Gaussian + vertical derivative</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss.png" alt="Gaussian-smoothed cameraman" loading="lazy">
+    <figcaption>Gaussian-smoothed cameraman</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj2/output/Part_1_3/cameraman_gauss_filtered_filter.png" alt="Gradient magnitude from the DoG filters" loading="lazy">
@@ -834,7 +840,7 @@ The most important connection for me was seeing the same idea appear repeatedly 
 
 Sources for the custom blend images:
 
-- [自制盐豆大福 自从在日本吃过后就一直念念不忘 黑豆微...](https://xhslink.cn/o/8MZ1LTafNCk)
+- [自制盐豆大福](https://xhslink.cn/o/8MZ1LTafNCk)
 - [把小老鼠擀成饺子皮需要几步](https://xhslink.cn/o/6EXZZQvzBg4)
 - <https://x.com/watabieni/status/1759877676658233570>
 - <https://xhslink.cn/m/4HHanyJsyJ>
