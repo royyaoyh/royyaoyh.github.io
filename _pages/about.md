@@ -10,6 +10,8 @@ Hello, my name is Roy Yao. I am an undergraduate student currently studying Bioe
 
 I am currently part of [Conolly Lab](https://bisl.studentorg.berkeley.edu/) under [Professor Steven Conolly](https://www2.eecs.berkeley.edu/Faculty/Homepages/sconolly.html) where I work on implementing a low noise preamp for Magnetic Particle Imaging (MPI). Besides research, I am also involved with [Bioengineering Honor Society (BioEHS)](https://bioehs.studentorg.berkeley.edu/) and [Neurotech@Berkeley](https://neurotech.studentorg.berkeley.edu/).
 
+Previously, I was a summer ressearch intern at [Prof. Chih-Chen Chen](https://pme.site.nthu.edu.tw/p/406-1308-74024,r4027.php?Lang=en) Lab at [National Tsing Hua University](https://nthu-en.site.nthu.edu.tw/). I was also an undergraduate researcher at [Ganguly Lab](https://www.gangulylab.org/) at [UCSF](https://www.ucsf.edu/)
+
 In my free time, I love reading about history and am currently trying to pick up sketching again!
 
 Projects

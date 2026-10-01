@@ -10,7 +10,7 @@ author_profile: true
 - **BIOENG H194**: Honors Undergraduate Research
 - **COMPSCI 180**: Intro to Computer Vision and Computational Photography   
 - **EECS C106A**: Introduction to Robotics 
-- **ELENG 198**: Micromouse
+- **ELENG 198**: IEEE Micromouse
 - **ELENG 290-13**: Advanced Brain Imaging Methods 
 
 ### Spring 2026
