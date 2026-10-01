@@ -41,39 +41,46 @@
     "vendor/font-awesome/solid",
     "vendor/font-awesome/brands"
 ;
-
+/* Links: only inside page content, so header/nav/sidebar are untouched */
 :root {
   --link: #2a5db0;
   --link-hover: #17407f;
-  --link-visited: #5b4fa3;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --link: #8ab4f8;
-    --link-hover: #b3d1ff;
-    --link-visited: #b9a8f0;
-  }
-}
-
-/* If your theme has a manual dark-mode toggle, mirror it here */
-html[data-theme="dark"] {
-  --link: #8ab4f8;
-  --link-hover: #b3d1ff;
-  --link-visited: #b9a8f0;
-}
-
-a,
-a:link {
+.page__content a,
+.page__content a:visited {
   color: var(--link);
 }
 
-a:visited {
-  color: var(--link-visited);
+.page__content a:hover,
+.page__content a:focus {
+  color: var(--link-hover);
 }
 
-a:hover,
-a:focus,
-a:active {
-  color: var(--link-hover);
+/* Dark mode: no accent color, just an underline in the text color */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .page__content a,
+  :root:not([data-theme="light"]) .page__content a:visited {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, 0.35);
+    text-underline-offset: 3px;
+  }
+  :root:not([data-theme="light"]) .page__content a:hover,
+  :root:not([data-theme="light"]) .page__content a:focus {
+    text-decoration-color: currentColor;
+  }
+}
+
+/* Manual dark toggle, if your theme has one */
+html[data-theme="dark"] .page__content a,
+html[data-theme="dark"] .page__content a:visited {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.35);
+  text-underline-offset: 3px;
+}
+html[data-theme="dark"] .page__content a:hover,
+html[data-theme="dark"] .page__content a:focus {
+  text-decoration-color: currentColor;
 }
