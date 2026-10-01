@@ -62,30 +62,19 @@
   text-underline-offset: 3px;
 }
 
-/* Dark mode: no accent color, just an underline in the text color */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .page__content a,
-  :root:not([data-theme="light"]) .page__content a:visited {
-    color: inherit;
-    text-decoration: underline;
-    text-decoration-color: rgba(255, 255, 255, 0.35);
-    text-underline-offset: 3px;
-  }
-  :root:not([data-theme="light"]) .page__content a:hover,
-  :root:not([data-theme="light"]) .page__content a:focus {
-    text-decoration-color: currentColor;
-  }
-}
-
-/* Manual dark toggle, if your theme has one */
-html[data-theme="dark"] .page__content a,
-html[data-theme="dark"] .page__content a:visited {
+/* Links: inherit text color, faint underline that strengthens on hover (light + dark) */
+.page__content a,
+.page__content a:visited {
   color: inherit;
   text-decoration: underline;
-  text-decoration-color: rgba(255, 255, 255, 0.35);
+  text-decoration-thickness: 1px;
   text-underline-offset: 3px;
+  text-decoration-color: rgba(128, 128, 128, 0.5); /* fallback */
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
 }
-html[data-theme="dark"] .page__content a:hover,
-html[data-theme="dark"] .page__content a:focus {
+
+.page__content a:hover,
+.page__content a:focus {
+  color: inherit;
   text-decoration-color: currentColor;
 }
