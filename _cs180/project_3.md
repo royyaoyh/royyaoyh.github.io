@@ -436,7 +436,7 @@ For `yopo`, $t_0=0.02$ produces a man's face; $t_0=0.04$ and $0.06$ retain only 
 
 This sweep shows how editing pushes non-realistic inputs toward natural-looking images. I test one web image and two hand drawings.
 
-**Web image: Moon Lord from Terraria.** The input is flat pixel art, so it starts far from the natural-image manifold. At $t_0=0.02$ the original is gone and the model gives an unrelated photo of a man with headphones at a desk. At $t_0=0.04$ and $0.06$ only the pose and the palette survive: the raised arms and open hands become a real man in a tan T-shirt, and the teal head becomes a glossy blue or teal helmet. At $t_0=0.10$ and $0.14$ the model keeps the symmetric layout and the teal glow but renders everything as glass, metal, and skin. The head turns into a translucent capsule with glowing teal orbs where the eyes were, the ribcage turns into metal rings, and the wrists get bracelets. At $t_0=0.25$ the Moon Lord returns with its tentacle face, brain, and palm eyes, but with smooth shading and realistic muscles instead of pixels. By $t_0=0.50$ it is almost the original pixel art, with only slightly softer outlines.
+**Web image: Moon Lord from Terraria.** At $t_0=0.02$ the pixel art is gone and the model gives an unrelated photo of a man at a desk; at $t_0=0.04$ and $0.06$, only the raised-arm pose and teal color remain, as a man in a T-shirt with a helmet for a head. At $t_0=0.10$ and $0.14$, the head and ribcage become glass and metal with glowing teal orbs. The pixel-art Moon Lord returns at $t_0=0.25$ with smoother, more realistic shading.
 
 <div class="p3-grid c1 ">
   <figure>
@@ -571,19 +571,6 @@ Each result is shown upright for $p_1$ and rotated $180^\circ$ for $p_2$. I trie
   <figure>
     <img src="/images/cs180/proj3/part_a/part_3/chinese_european_village_anagram_anagram_comparison.png" alt="Illusion 4: ancient Chinese village (upright) and medieval European-style town (rotated 180^\circ)" loading="lazy">
     <figcaption>Illusion 4: ancient Chinese village (upright) and medieval European-style town (rotated $180^\circ$)</figcaption>
-  </figure>
-</div>
-
-For illusions 3 and 4, here are the generated images themselves, in the orientation of the upright prompt $p_1$:
-
-<div class="p3-grid c2 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/angel_demon_anagram.png" alt="Illusion 3: generated image, upright view (angel)" loading="lazy">
-    <figcaption>Illusion 3: generated image, upright view (angel)</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/chinese_european_village_anagram.png" alt="Illusion 4: generated image, upright view (ancient Chinese village)" loading="lazy">
-    <figcaption>Illusion 4: generated image, upright view (ancient Chinese village)</figcaption>
   </figure>
 </div>
 
@@ -884,7 +871,7 @@ I sample $40$ digits from checkpoints at epochs $1$, $5$, and $10$, reusing the 
     <figcaption>Time-conditioned flow matching: 40 samples after epoch 1</figcaption>
   </figure>
   <figure>
-    <img src="/images/cs180/proj3/part_b/part_2_3_epoch_5.png" alt="Time-conditioned flow matching, samples after epoch 5" loading="lazy">
+    <img src="/images/cs180/proj3/part_b/part_2_3.png" alt="Time-conditioned flow matching, samples after epoch 5" loading="lazy">
     <figcaption>Time-conditioned flow matching: 40 samples after epoch 5</figcaption>
   </figure>
   <figure>
