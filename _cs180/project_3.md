@@ -39,27 +39,6 @@ window.MathJax = {
 .p3-note { color: inherit; border-left: 4px solid #6f97c9; background: rgba(111, 151, 201, 0.14); padding: 0.7em 1.1em; margin: 1.4em 0; border-radius: 0 4px 4px 0; }
 .p3-note p:last-child, .p3-note ol:last-child { margin-bottom: 0; }
 .p3-note ol { margin-top: 0.4em; }
-.p3-code { margin: 1.2em 0; border: 1px solid rgba(128, 128, 128, 0.45); border-radius: 6px; overflow: hidden; color: inherit; }
-.p3-code-title { padding: 0.5em 1em; font-weight: 700; color: inherit; background: rgba(128, 128, 128, 0.14); border-bottom: 1px solid rgba(128, 128, 128, 0.35); }
-.p3-code > p { margin: 0; padding: 0.6em 1em; }
-.p3-code .highlighter-rouge, .p3-code .highlight, .p3-code pre { margin: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; overflow-x: auto; }
-.p3-code pre { padding: 0.8em 1em !important; }
-html .p3-code .highlighter-rouge, html .p3-code .highlight, html .p3-code pre, html .p3-code pre code { background: #ffffff !important; color: #24292f !important; }
-html .p3-code .highlight span { color: #24292f !important; background: transparent !important; }
-html .p3-code .highlight span[class^="c"] { color: #6e7781 !important; font-style: italic; }
-html .p3-code .highlight span[class^="k"], html .p3-code .highlight span.ow { color: #cf222e !important; }
-html .p3-code .highlight span[class^="s"] { color: #0a3069 !important; }
-html .p3-code .highlight span[class^="m"], html .p3-code .highlight span.il { color: #0550ae !important; }
-html .p3-code .highlight span.nf, html .p3-code .highlight span.nc, html .p3-code .highlight span.fm { color: #8250df !important; }
-html .p3-code .highlight span.nb, html .p3-code .highlight span.bp { color: #0550ae !important; }
-html[data-p3-mode="dark"] .p3-code .highlighter-rouge, html[data-p3-mode="dark"] .p3-code .highlight, html[data-p3-mode="dark"] .p3-code pre, html[data-p3-mode="dark"] .p3-code pre code { background: #0d1117 !important; color: #e6edf3 !important; }
-html[data-p3-mode="dark"] .p3-code .highlight span { color: #e6edf3 !important; background: transparent !important; }
-html[data-p3-mode="dark"] .p3-code .highlight span[class^="c"] { color: #8b949e !important; font-style: italic; }
-html[data-p3-mode="dark"] .p3-code .highlight span[class^="k"], html[data-p3-mode="dark"] .p3-code .highlight span.ow { color: #ff7b72 !important; }
-html[data-p3-mode="dark"] .p3-code .highlight span[class^="s"] { color: #a5d6ff !important; }
-html[data-p3-mode="dark"] .p3-code .highlight span[class^="m"], html[data-p3-mode="dark"] .p3-code .highlight span.il { color: #79c0ff !important; }
-html[data-p3-mode="dark"] .p3-code .highlight span.nf, html[data-p3-mode="dark"] .p3-code .highlight span.nc, html[data-p3-mode="dark"] .p3-code .highlight span.fm { color: #d2a8ff !important; }
-html[data-p3-mode="dark"] .p3-code .highlight span.nb, html[data-p3-mode="dark"] .p3-code .highlight span.bp { color: #79c0ff !important; }
 .p3-cmp { display: block !important; max-width: 640px; margin: 1.4em auto 0.6em !important; text-align: center; }
 .p3-cmp-stage { position: relative; overflow: hidden; line-height: 0; border-radius: 4px; touch-action: pan-y; -webkit-user-select: none; user-select: none; cursor: ew-resize; }
 .p3-cmp-stage img { display: block; width: 100%; height: auto; margin: 0 !important; pointer-events: none; -webkit-user-drag: none; }
@@ -242,17 +221,6 @@ $$
   </tbody>
 </table>
 
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: interpolate</div>
-
-```python
-def interpolate(image, noise, t):
-    return (1 - t) * noise + t * image
-```
-
-</div>
-
 I sampled **one** noise tensor $\epsilon$ (`noise(SEED)`, seed $180$) and reused it for all three times, so the three noisy images differ only through $t$. I saved the original image, $\epsilon$, and the three noisy tensors for Sections 1.2–1.5 (Section 1.4 needs the original image/noise pair for the ground-truth velocity).
 
 <div class="p3-grid c1 medium">
@@ -275,20 +243,6 @@ $$
 Dividing by $t$ fixes the image amplitude, but it does **not** remove noise. In fact it amplifies the noise to a standard deviation of $\frac{1-t}{t}$, which is $3$, $1$, and $\tfrac13$ for $t=0.25,\,0.50,\,0.75$. So the baseline has a much harder job at small $t$.
 
 For each noisy input I swept $\sigma\in\{1,2,4,8,16\}$ (kernel size $6\sigma+1$) and kept the $\sigma$ with the lowest mean squared error to the known clean image. This is an *oracle* baseline: it peeks at the ground truth to choose $\sigma$, so a real classical denoiser would do no better than this. The chosen $\sigma$ is printed in each panel title.
-
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: Gaussian blur baseline</div>
-
-```python
-blurred = {}
-for t, x in noisy.items():
-    candidates = {s: gaussian_blur(x / t, [int(6 * s + 1)] * 2, [s, s]) for s in [1., 2., 4., 8., 16.]}
-    sigma = min(candidates, key=lambda s: ((candidates[s] - image) ** 2).mean().item())
-    blurred[t] = candidates[sigma]
-```
-
-</div>
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -317,22 +271,6 @@ $$
 
 The network predicts a **velocity**, not noise, so the prediction is added with the factor $(1-t)$ rather than subtracted. I use the prompt `"a high quality photo"` and check that the returned velocity has the same shape, dtype, and device as the input and is finite.
 
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: one_step_denoise</div>
-
-```python
-def one_step_denoise(x, t, condition, predict_velocity):
-    return x + (1 - t) * predict_velocity(x, t, condition)
-
-v = predict_velocity(noisy[.5], .5, condition)
-assert v.shape == image.shape and v.dtype == image.dtype and v.device == image.device
-assert torch.isfinite(v).all()
-one_step = {t: one_step_denoise(x, t, condition, predict_velocity) for t, x in noisy.items()}
-```
-
-</div>
-
 <div class="p3-grid c1 medium">
   <figure>
     <img src="/images/cs180/proj3/part_a/part_1/1_3.png" alt="Original, noisy input, and one-step estimate for t=0.25, t=0.50, t=0.75" loading="lazy">
@@ -359,21 +297,6 @@ E_t(i,j)=\sqrt{\operatorname{mean}_{\mathrm{RGB}}\!\left(\Big[(1-t)\big(\hat v_t
 $$
 
 For display, both updates use the same symmetric RGB scale (zero is mid-gray), and the three error maps share the same color limits, so the three times are directly comparable.
-
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: velocity_diagnostics</div>
-
-```python
-@torch.inference_mode()
-def velocity_diagnostics(x_t, t, clean_image, epsilon, condition, predict_velocity):
-    predicted_update = (1 - t) * predict_velocity(x_t, t, condition)
-    ground_truth_update = clean_image - x_t                      # = (1 - t) * (x_1 - eps)
-    error_map = (predicted_update - ground_truth_update).pow(2).mean(dim=1).sqrt()   # RMS over RGB, shape (B, H, W)
-    return predicted_update, ground_truth_update, error_map
-```
-
-</div>
 
 The original image (shown once) is the one from the start of this section.
 
@@ -413,50 +336,7 @@ $$
 
 With start time $t_0$ and step size $h=0.02$, the times are $t_k=t_0+kh$ and the number of steps is $N=\lceil (1-t_0)/h\rceil$. The last step is shortened, $h_k=\min(h,\,1-t_k)$, so the integration ends exactly at $t=1$. For $t_0=0.5$ this is $25$ updates; for $t_0=0$ it is $50$.
 
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: euler_sample</div>
-
-```python
-@torch.inference_mode()
-def euler_sample(x_start, t_start, step_size, velocity):
-    x = x_start
-    n_steps = math.ceil((1.0 - t_start) / step_size - 1e-9)
-    states = [(t_start, x.clone())]
-
-    for i in range(n_steps):
-        t = t_start + i * step_size
-        h = min(step_size, 1.0 - t)              # shorten the last step to land exactly on t = 1
-        x = x + h * velocity(x, t)               # velocity is recomputed at every step
-        if i == n_steps - 1:
-            states.append((1.0, x.clone()))
-        elif (i + 1) % 5 == 0:
-            states.append((t + h, x.clone()))
-
-    return x, states
-```
-
-</div>
-
 **Test with a constant velocity field.** For $v\equiv 1$ the exact answer after integrating from $t_0$ to $1$ is $x=x_{\text{start}}+(1-t_0)$. I check this on a toy tensor, including a start time that needs a shortened last step. The assertions pass for $t_0=0$ (50 full steps), $t_0=0.5$ (25 steps), and $t_0=0.93$ (4 steps, the last one only $0.01$ long).
-
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: Euler sanity check</div>
-
-```python
-calls = []
-def constant_v(x, t):
-    calls.append(t); return torch.ones_like(x)
-
-toy = torch.zeros(1, 3, 4, 4, device=device)
-for start, step, expected in [(0, .02, 50), (.5, .02, 25), (.93, .02, 4)]:
-    calls.clear(); end, states = euler_sample(toy, start, step, constant_v)
-    assert len(calls) == expected and states[-1][0] == 1
-    assert torch.allclose(end, torch.full_like(toy, 1 - start), atol=1e-6)
-```
-
-</div>
 
 Starting from the saved $t=0.50$ noisy image I run the $25$ Euler updates with `"a high quality photo"`. The figure shows the initial state, every fifth update, and the final image, labeled by time ($t=0.50,\,0.60,\,0.70,\,0.80,\,0.90,\,1.00$).
 
@@ -484,19 +364,6 @@ The trajectory first settles the large structures (sky, horizon, the lake) and o
 
 The same `euler_sample` also generates images from scratch: I set $t_{\text{start}}=0$ and pass pure Gaussian noise as `x_start`, which means denoising pure noise with $50$ Euler updates. I use the prompt `"a high quality photo"` and five independent initial noises (seeds $180$–$184$, kept so that Section 2.1 can reuse **exactly the same noises**).
 
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: Generating from noise</div>
-
-```python
-samples = {}
-for i in range(5):
-    x, _ = euler_sample(noise(SEED + i), 0, H, lambda x, t: predict_velocity(x, t, condition))
-    samples[f"seed={SEED + i}"] = x
-```
-
-</div>
-
 <div class="p3-grid c1 medium">
   <figure>
     <img src="/images/cs180/proj3/part_a/part_1/1_6.png" alt="Five samples with the prompt 'a high quality photo' (no guidance), seeds 180–184" loading="lazy">
@@ -519,24 +386,6 @@ v_{\mathrm{cfg}}=v_c+w\,(v_c-v_u).\tag{A.4}
 $$
 
 $w=0$ is ordinary conditional sampling. I use $w=7$ and $h=0.02$. Equivalently, $v_{\mathrm{cfg}}=v_u+(1+w)(v_c-v_u)$, so the guided velocity moves $1+w$ times as far in the "prompt direction" $v_c-v_u$.
-
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: cfg_velocity</div>
-
-```python
-def cfg_velocity(x, t, condition, w, predict_velocity, null_condition=''):
-    v_c = predict_velocity(x, t, condition)          # conditional prediction
-    v_u = predict_velocity(x, t, null_condition)     # unconditional (empty prompt) prediction, same x and t
-    return v_c + w * (v_c - v_u)
-
-# sanity check: w = 0 must reproduce the ordinary conditional prediction
-x = noise(SEED)
-assert torch.equal(cfg_velocity(x, .5, condition, 0, predict_velocity, null_condition),
-                   predict_velocity(x, .5, condition))
-```
-
-</div>
 
 Here are five CFG samples with `"a high quality photo"`, using the same initial noises as Section 1.6 (seeds $180$–$184$). For direct comparison, the unguided samples from Section 1.6 are shown first.
 
@@ -568,26 +417,6 @@ x_{t_0}=(1-t_0)\,\epsilon+t_0\,x_1,\qquad x_{t+h}=x_t+h\,v_{\mathrm{cfg}}(x_t,t,
 $$
 
 The model has to "hallucinate" whatever the noise destroyed, so it effectively pushes the noisy image back onto the manifold of natural images. A **smaller** $t_0$ means more noise and a bigger edit; a **larger** $t_0$ keeps more of the original. I reuse the same $\epsilon$ (seed $180$) for every starting time, so only $t_0$ changes across a row. The starting times are $t_0\in\{0.02,0.04,0.06,0.10,0.14,0.25,0.50\}$ and the prompt is `"a high quality photo"`.
-
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: edit</div>
-
-```python
-def edit(image, noise, t_start, condition, predict_velocity, w=7, step_size=0.02):
-    x_t = interpolate(image, noise, t_start)
-    x, _ = euler_sample(x_t, t_start, step_size,
-                        lambda x, t: cfg_velocity(x, t, condition, w, predict_velocity))
-    return x
-
-STARTS = [0.02, 0.04, 0.06, 0.10, 0.14, 0.25, 0.50]
-for name, y in edit_inputs.items():
-    panel("edit_" + name, {"original": y, **{
-        f"t={t:.2f}": edit(y, noise(SEED), t, condition, predict_velocity, w=W, step_size=H)
-        for t in STARTS}})
-```
-
-</div>
 
 How much of the original is left in the starting image at each $t_0$ (the SNR is $t_0^2/(1-t_0)^2$ as in Section 1.1, and the number of Euler updates is $\lceil(1-t_0)/h\rceil$):
 
@@ -688,33 +517,11 @@ The sweet spot for turning a drawing into a photo is around $t_0=0.10$–$0.14$:
 
 Same procedure as 3.1, but the generic prompt is replaced by a prompt that describes the **desired edit**. The prompt guides how the model fills in the noise, so now the starting time decides the balance between *the prompt* (small $t_0$) and *the original image* (large $t_0$).
 
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: Text-guided editing</div>
-
-```python
-EDIT_PROMPTS = {
-    "campanile":  "the big ben",
-    "my_image_1": "A delicious seafood feast served on a large platter, featuring fresh lobster, king crab legs, "
-                  "shrimp, mussels, clams, oysters, and scallops. ... professional food photography, "
-                  "photorealistic, 4K quality.",
-    "my_image_2": "male with pink and green hair",
-}
-for name, prompt in EDIT_PROMPTS.items():
-    c = model.encode(prompt)
-    y = edit_inputs[name]
-    panel("text_edit_" + name, {"original": y, **{
-        f"t={t:.2f}": edit(y, noise(SEED), t, c, predict_velocity, w=W, step_size=H)
-        for t in STARTS}}, title=f'{name}: "{prompt}"')
-```
-
-</div>
-
 <table class="p3-table" style="width:auto; display:table; margin:1em auto;">
   <thead><tr><th>Image</th><th>Prompt</th></tr></thead>
   <tbody>
     <tr><td>Campanile</td><td><code>the big ben</code></td></tr>
-    <tr><td>My image 1 (pancake)</td><td><code>A delicious seafood feast served on a large platter, featuring fresh lobster, king crab legs, shrimp, mussels, clams, oysters, and scallops. Beautifully arranged with lemon wedges, ... photorealistic, 4K quality.</code></td></tr>
+    <tr><td>My image 1 (pancake)</td><td><code>A seafood platter with lobster, crab, shrimp, mussels, and lemon wedges, photorealistic.</code></td></tr>
     <tr><td>My image 2 (dessert cup)</td><td><code>male with pink and green hair</code></td></tr>
   </tbody>
 </table>
@@ -770,27 +577,6 @@ $$
 
 Here $\operatorname{flip}(\cdot)$ is a $180^\circ$ rotation, i.e., it flips **both** spatial axes (not just a vertical mirror), so $\operatorname{flip}(\operatorname{flip}(x))=x$ (which I assert in the notebook). Why it works: $\operatorname{flip}$ only permutes pixels, so the flipped noisy image is still a valid noisy image (Gaussian noise is unchanged by permuting pixels), and the network can denoise it with the second prompt. Averaging forces both views to agree on one image: each Euler step moves $x_t$ in a direction that increases the likelihood of $p_1$ when seen upright and the likelihood of $p_2$ when seen rotated.
 
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: visual_anagrams</div>
-
-```python
-def rotate180(x):
-    return torch.flip(x, (-2, -1))               # flip both spatial axes
-
-def visual_anagrams(noise, condition_a, condition_b, predict_velocity, w=7, step_size=0.02):
-    def velocity(x, t):
-        v_a = cfg_velocity(x, t, condition_a, w, predict_velocity, null_condition)
-        # View 2: rotate the image, predict with prompt B, rotate the velocity back
-        v_b = rotate180(cfg_velocity(rotate180(x), t, condition_b, w, predict_velocity, null_condition))
-        return 0.5 * (v_a + v_b)
-
-    x, _ = euler_sample(noise, 0.0, step_size, velocity)
-    return x
-```
-
-</div>
-
 Each figure below shows the **same** generated image upright (left, prompt $p_1$) and rotated by $180^\circ$ (right, prompt $p_2$). I tried several prompt and seed combinations, because a numerically successful run does not guarantee that both subjects are recognizable.
 
 <table class="p3-table" style="width:auto; display:table; margin:1em auto;">
@@ -844,27 +630,6 @@ x_{t+h}=x_t+h\,v .
 $$
 
 $f_{\mathrm{lowpass}}$ is a Gaussian blur with kernel size $265$ and $\sigma=16$ at $512\times512$ (the kernel size is $2\cdot\mathrm{round}(16.5\cdot512/64)+1=265$). Because the blur is linear, the update splits cleanly into frequency bands: the coarse structure of $x$ follows prompt $p_1$ (what you see from far away), and the fine detail follows prompt $p_2$ (what you see up close). Prompt $p_1$ is therefore the "distant" prompt and $p_2$ the "close" prompt.
-
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: make_hybrids</div>
-
-```python
-def lowpass(x, sigma=16.0):
-    kernel = 2 * round(16.5 * x.shape[-1] / 64) + 1      # 265 at 512 x 512
-    return gaussian_blur(x, [kernel, kernel], [sigma, sigma])
-
-def make_hybrids(noise, condition_a, condition_b, predict_velocity, w=7, step_size=0.02):
-    def velocity(x, t):
-        v_a = cfg_velocity(x, t, condition_a, w, predict_velocity, null_condition)   # distant prompt
-        v_b = cfg_velocity(x, t, condition_b, w, predict_velocity, null_condition)   # close prompt
-        return lowpass(v_a) + (v_b - lowpass(v_b))           # low(v_a) + high(v_b)
-
-    x, _ = euler_sample(noise, 0.0, step_size, velocity)
-    return x
-```
-
-</div>
 
 Each hybrid is shown at its **full size** ($512\times512$, the close view) and again at a **reduced size** ($64\times64$, the distant view, where the high frequencies are no longer visible).
 
@@ -944,107 +709,6 @@ $D$ is the hidden width (a hyperparameter). With input $1\times28\times28$ the t
 <details markdown="1">
 <summary>Show full UNet code (simple ops, composed ops, unconditional UNet)</summary>
 
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: UNet building blocks and the unconditional UNet</div>
-
-```python
-class Conv(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
-        self.norm = nn.BatchNorm2d(out_channels)
-        self.act = nn.GELU()
-    def forward(self, x):
-        return self.act(self.norm(self.conv(x)))
-
-class DownConv(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, stride=2)
-        self.norm = nn.BatchNorm2d(out_channels)
-        self.act = nn.GELU()
-    def forward(self, x):
-        return self.act(self.norm(self.conv(x)))
-
-class UpConv(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.conv = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1)
-        self.norm = nn.BatchNorm2d(out_channels)
-        self.act = nn.GELU()
-    def forward(self, x):
-        return self.act(self.norm(self.conv(x)))
-
-class Flatten(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.pool = nn.AvgPool2d(kernel_size=7)
-        self.act = nn.GELU()
-    def forward(self, x):
-        return self.act(self.pool(x))
-
-class Unflatten(nn.Module):
-    def __init__(self, in_channels):
-        super().__init__()
-        self.conv = nn.ConvTranspose2d(in_channels, in_channels, kernel_size=7, stride=7)
-        self.norm = nn.BatchNorm2d(in_channels)
-        self.act = nn.GELU()
-    def forward(self, x):
-        return self.act(self.norm(self.conv(x)))
-
-class ConvBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.conv1 = Conv(in_channels, out_channels)
-        self.conv2 = Conv(out_channels, out_channels)
-    def forward(self, x):
-        return self.conv2(self.conv1(x))
-
-class DownBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.down = DownConv(in_channels, out_channels)
-        self.block = ConvBlock(out_channels, out_channels)
-    def forward(self, x):
-        return self.block(self.down(x))
-
-class UpBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.up = UpConv(in_channels, out_channels)
-        self.block = ConvBlock(out_channels, out_channels)
-    def forward(self, x):
-        return self.block(self.up(x))
-
-class UnconditionalUNet(nn.Module):
-    def __init__(self, in_channels, num_hiddens):
-        super().__init__()
-        D = num_hiddens
-        self.in_block = ConvBlock(in_channels, D)
-        self.down1 = DownBlock(D, D)
-        self.down2 = DownBlock(D, D * 2)
-        self.flatten = Flatten()
-        self.unflatten = Unflatten(D * 2)
-        self.up1 = UpBlock(D * 4, D)
-        self.up2 = UpBlock(D * 2, D)
-        self.out_block = ConvBlock(2 * D, D)
-        self.out_conv = nn.Conv2d(D, in_channels, kernel_size=3, stride=1, padding=1)
-
-    def forward(self, x):
-        assert x.shape[-2:] == (28, 28), "Expect input shape to be (28, 28)."
-        x1 = self.in_block(x)                         # D  x 28 x 28
-        x2 = self.down1(x1)                           # D  x 14 x 14
-        x3 = self.down2(x2)                           # 2D x  7 x  7
-        z = self.unflatten(self.flatten(x3))          # 2D x  7 x  7 (through a 1 x 1 bottleneck)
-        u1 = self.up1(torch.cat([x3, z], dim=1))      # D  x 14 x 14
-        u2 = self.up2(torch.cat([x2, u1], dim=1))     # D  x 28 x 28
-        out = self.out_block(torch.cat([x1, u2], dim=1))
-        return self.out_conv(out)                     # 1  x 28 x 28
-```
-
-</div>
-
 </details>
 
 #### 1.2 Using the UNet to Train a Denoiser
@@ -1056,22 +720,6 @@ z=x+\sigma\epsilon,\qquad \epsilon\sim\mathcal{N}(0,I),\tag{B.2}
 $$
 
 with $x\in[0,1]$. The figure shows the noising process for $\sigma\in\{0.0,0.2,0.4,0.5,0.6,0.8,1.0\}$: the digits become harder to read as $\sigma$ grows, and for $\sigma=1.0$ the noise has the same standard deviation as the full pixel range, so the digit is almost invisible.
-
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: Noising process</div>
-
-```python
-sigmas = [0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0]
-
-def add_noise(x, sigma):
-    """Eq. B.2: z = x + sigma * eps,  eps ~ N(0, I)."""
-    return x + sigma * torch.randn_like(x)
-
-# (display clamps to [0, 1] with imshow(vmin=0, vmax=1); the noisy tensors themselves are not clipped)
-```
-
-</div>
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -1093,28 +741,6 @@ I train the denoiser to remove noise with **$\sigma=0.5$**:
     <tr><td>Epochs</td><td>5</td></tr>
   </tbody>
 </table>
-
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: Training loop for the denoiser</div>
-
-```python
-model = UnconditionalUNet(1, hidden_dim=128).to(device)        # D = 128
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-criterion = nn.MSELoss()
-
-train_losses = []
-for epoch in range(5):
-    for images, _ in train_loader:                              # batch size 256, shuffled
-        images = images.to(device)
-        images_noisy = images + 0.5 * torch.randn_like(images)  # fresh noise every step
-        outputs = model(images_noisy)
-        loss = criterion(outputs, images)
-        optimizer.zero_grad(); loss.backward(); optimizer.step()
-        train_losses.append(loss.item())
-```
-
-</div>
 
 **Training loss curve.** The loss is logged at every iteration (faint line) and a 100-iteration moving average is overlaid. It drops very fast in the first ~100 iterations and then decreases slowly. The last-batch loss after each epoch is $0.0120,\ 0.0101,\ 0.0092,\ 0.0091,\ 0.0085$ for epochs $1$ to $5$.
 
@@ -1156,21 +782,6 @@ The denoiser generalizes in one direction better than in the other. For **smalle
 ##### 1.2.3 Denoising Pure Noise
 
 To turn denoising into a generative task, I feed **pure noise** $z=\epsilon\sim\mathcal{N}(0,I)$ and ask for a clean digit. I repeat the training from 1.2.1 (same $D=128$ UNet, Adam $10^{-4}$, batch 256, 5 epochs), but the input is now pure noise and the target is still a clean digit.
-
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: Training on pure noise (only the input changes)</div>
-
-```python
-for images, _ in train_loader:
-    images = images.to(device)
-    z = torch.randn_like(images)            # input: pure noise, independent of the digit
-    outputs = model(z)
-    loss = criterion(outputs, images)       # target: the clean digit
-    ...
-```
-
-</div>
 
 <div class="p3-grid c1 narrow">
   <figure>
@@ -1248,55 +859,6 @@ $$
 <details markdown="1">
 <summary>Show full code (FCBlock and TimeConditionalUNet)</summary>
 
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: FCBlock and time-conditioned UNet</div>
-
-```python
-class FCBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.fc1 = nn.Linear(in_channels, out_channels)
-        self.act = nn.GELU()
-        self.fc2 = nn.Linear(out_channels, out_channels)
-    def forward(self, x):
-        return self.fc2(self.act(self.fc1(x)))
-
-class TimeConditionalUNet(nn.Module):
-    def __init__(self, in_channels, num_classes, num_hiddens):
-        super().__init__()
-        D = num_hiddens; self.D = D
-        self.in_block = ConvBlock(in_channels, D)
-        self.down1 = DownBlock(D, D)
-        self.down2 = DownBlock(D, D * 2)
-        self.flatten = Flatten()
-        self.unflatten = Unflatten(D * 2)
-        self.up1 = UpBlock(D * 4, D)
-        self.up2 = UpBlock(D * 2, D)
-        self.out_block = ConvBlock(2 * D, D)
-        self.out_conv = nn.Conv2d(D, in_channels, kernel_size=3, stride=1, padding=1)
-        self.fc1_t = FCBlock(1, D * 2)
-        self.fc2_t = FCBlock(1, D)
-
-    def forward(self, x, t):
-        t = t.reshape(-1, 1).to(x.dtype)                        # t is normalized to [0, 1]
-        t1 = self.fc1_t(t).reshape(-1, 2 * self.D, 1, 1)
-        t2 = self.fc2_t(t).reshape(-1, self.D, 1, 1)
-
-        x1 = self.in_block(x)
-        x2 = self.down1(x1)
-        x3 = self.down2(x2)
-        z = self.unflatten(self.flatten(x3))
-        z = z * t1                                              # modulated unflatten
-        u1 = self.up1(torch.cat([x3, z], dim=1))
-        u1 = u1 * t2                                            # modulated up1
-        u2 = self.up2(torch.cat([x2, u1], dim=1))
-        out = self.out_block(torch.cat([x1, u2], dim=1))
-        return self.out_conv(out)
-```
-
-</div>
-
 </details>
 
 #### 2.2 Training the UNet
@@ -1321,34 +883,6 @@ Training the time-conditioned UNet $u_\theta(x_t,t)$ is Algorithm B.1: pick a cl
   </tbody>
 </table>
 
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: Algorithm 1: time-conditioned flow matching loss and training</div>
-
-```python
-def time_fm_forward(unet, x_1, num_ts):
-    unet.train()
-    N = x_1.shape[0]
-    x_0 = torch.randn_like(x_1)                       # x_0 ~ N(0, I)
-    t = torch.rand(N, device=x_1.device)              # t ~ U[0, 1], one per sample
-    t_b = t.reshape(N, 1, 1, 1)
-    x_t = (1 - t_b) * x_0 + t_b * x_1                 # B.3
-    flow = x_1 - x_0                                  # B.4
-    flow_pred = unet(x_t, t)
-    return F.mse_loss(flow_pred, flow)                # B.5
-
-model = TimeConditionalFM(TimeConditionalUNet(1, 10, 64), num_ts=50).to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
-scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.1 ** (1.0 / 10))
-for epoch in range(10):
-    for images, _ in train_loader:                    # batch size 64
-        loss = model(images.to(device))
-        optimizer.zero_grad(); loss.backward(); optimizer.step()
-    scheduler.step()                                  # decay the learning rate once per epoch
-```
-
-</div>
-
 <div class="p3-grid c1 narrow">
   <figure>
     <img src="/images/cs180/proj3/part_b/part_2_2.png" alt="Training loss of the time-conditioned UNet over all 10 epochs (9,380 iterations)" loading="lazy">
@@ -1371,28 +905,6 @@ $$
     <img src="/images/cs180/proj3/part_b/algo2_t_only_fm.png" alt="Algorithm B.2: sampling from the time-conditioned UNet" loading="lazy">
     <figcaption>Algorithm B.2: sampling from the time-conditioned UNet</figcaption>
   </figure>
-</div>
-
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: Algorithm 2: sampling</div>
-
-```python
-@torch.inference_mode()
-def time_fm_sample(unet, img_wh, num_ts, seed=0):
-    num_samples = 40
-    unet.eval()
-    device = next(unet.parameters()).device
-    H, W = img_wh
-    g = torch.Generator(device=device).manual_seed(seed)
-
-    x = torch.randn(num_samples, 1, H, W, generator=g, device=device)       # x_0 ~ N(0, I)
-    for i in range(num_ts):
-        t = torch.full((num_samples,), i / num_ts, device=device)
-        x = x + (1 / num_ts) * unet(x, t)                                   # Euler step
-    return x
-```
-
 </div>
 
 I saved checkpoints after epochs $1$, $5$, and $10$ and sample $40$ digits from each with the **same** seed (so the same $40$ starting noises are used and the grids are comparable).
@@ -1427,48 +939,6 @@ I also want the network to work **without** a class, so that I can use classifie
 <details markdown="1">
 <summary>Show full code (ClassConditionalUNet)</summary>
 
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: Class-conditioned UNet</div>
-
-```python
-class ClassConditionalUNet(nn.Module):
-    def __init__(self, in_channels, num_classes, num_hiddens):
-        super().__init__()
-        D = num_hiddens; self.D = D; self.num_classes = num_classes
-        self.in_block = ConvBlock(in_channels, D)
-        self.down1 = DownBlock(D, D)
-        self.down2 = DownBlock(D, 2 * D)
-        self.flatten = Flatten()
-        self.unflatten = Unflatten(2 * D)
-        self.up1 = UpBlock(4 * D, D)
-        self.up2 = UpBlock(2 * D, D)
-        self.out_block = ConvBlock(2 * D, D)
-        self.out_conv = nn.Conv2d(D, in_channels, kernel_size=3, stride=1, padding=1)
-        self.fc1_t = FCBlock(1, 2 * D);           self.fc2_t = FCBlock(1, D)               # time
-        self.fc1_c = FCBlock(num_classes, 2 * D); self.fc2_c = FCBlock(num_classes, D)     # class
-
-    def forward(self, x, c, t, mask=None):
-        t = t.reshape(-1, 1).to(x.dtype)
-        c = F.one_hot(c, num_classes=self.num_classes).to(x.dtype)          # one-hot class vector
-        if mask is not None:
-            c = c * mask.reshape(-1, 1).to(x.dtype)                         # mask == 0  ->  zero vector (dropped class)
-
-        t1 = self.fc1_t(t).reshape(-1, 2 * self.D, 1, 1); t2 = self.fc2_t(t).reshape(-1, self.D, 1, 1)
-        c1 = self.fc1_c(c).reshape(-1, 2 * self.D, 1, 1); c2 = self.fc2_c(c).reshape(-1, self.D, 1, 1)
-
-        x1 = self.in_block(x); x2 = self.down1(x1); x3 = self.down2(x2)
-        z = self.unflatten(self.flatten(x3))
-        z = c1 * z + t1                                                      # modulated unflatten
-        u1 = self.up1(torch.cat([x3, z], dim=1))
-        u1 = c2 * u1 + t2                                                    # modulated up1
-        u2 = self.up2(torch.cat([x2, u1], dim=1))
-        out = self.out_block(torch.cat([x1, u2], dim=1))
-        return self.out_conv(out)
-```
-
-</div>
-
 </details>
 
 #### 2.5 Training the UNet
@@ -1480,29 +950,6 @@ Training is the same as the time-only version (Algorithm B.3), with two differen
     <img src="/images/cs180/proj3/part_b/algo3_c_fm.png" alt="Algorithm B.3: training the class-conditioned UNet" loading="lazy">
     <figcaption>Algorithm B.3: training the class-conditioned UNet</figcaption>
   </figure>
-</div>
-
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: Algorithm 3: class-conditioned flow matching loss</div>
-
-```python
-def class_fm_forward(unet, x_1, c, p_uncond, num_ts):
-    unet.train()
-    N = x_1.shape[0]
-    x_0 = torch.randn_like(x_1)
-    t = torch.rand(N, device=x_1.device)
-    t_b = t.reshape(N, 1, 1, 1)
-    x_t = (1 - t_b) * x_0 + t_b * x_1                 # same as Algorithm 1
-    flow = x_1 - x_0
-
-    # with probability p_uncond drop the class (mask = 0 -> zero one-hot vector), per sample
-    mask = (torch.rand(N, device=x_1.device) >= p_uncond).float()
-
-    pred = unet(x_t, c, t, mask)
-    return F.mse_loss(pred, flow)
-```
-
 </div>
 
 The hyperparameters are the same as for the time-only model (Section 2.2): $D=64$, batch size $64$, Adam with initial learning rate $10^{-2}$, `ExponentialLR` with $\gamma=0.1^{1/10}$ stepped once per epoch, $10$ epochs, $p_{\text{uncond}}=0.1$. Checkpoints are saved after epochs $1$, $5$, and $10$.
@@ -1529,33 +976,6 @@ $$
     <img src="/images/cs180/proj3/part_b/algo4_c_fm.png" alt="Algorithm B.4: class-conditional sampling with classifier-free guidance" loading="lazy">
     <figcaption>Algorithm B.4: class-conditional sampling with classifier-free guidance</figcaption>
   </figure>
-</div>
-
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: Algorithm 4: class-conditioned sampling with CFG</div>
-
-```python
-@torch.inference_mode()
-def class_fm_sample(unet, c, img_wh, num_ts, guidance_scale=5.0, seed=0):
-    unet.eval()
-    device = next(unet.parameters()).device
-    H, W = img_wh
-    c = c.to(device); N = c.shape[0]
-    g = torch.Generator(device=device).manual_seed(seed)
-
-    x = torch.randn(N, 1, H, W, generator=g, device=device)                  # x_0 ~ N(0, I)
-    mask_cond = torch.ones(N, device=device)                                 # keep the class
-    mask_uncond = torch.zeros(N, device=device)                              # drop the class
-    for i in range(num_ts):
-        t = torch.full((N,), i / num_ts, device=device)
-        u_uncond = unet(x, c, t, mask_uncond)
-        u_cond = unet(x, c, t, mask_cond)
-        u = u_uncond + guidance_scale * (u_cond - u_uncond)                  # classifier-free guidance
-        x = x + (1.0 / num_ts) * u                                           # Euler step
-    return x
-```
-
 </div>
 
 <div class="p3-note" markdown="1">
@@ -1586,20 +1006,6 @@ Class conditioning with guidance is a big improvement over the time-only model. 
 ##### Removing the learning-rate scheduler
 
 **Can I get rid of the exponential learning-rate scheduler and keep the same quality?** The scheduler multiplies the learning rate by $\gamma=0.1^{1/10}\approx0.79$ after every epoch, from $10^{-2}$ down to $10^{-3}$, so it gives large, fast steps at the start (when the model is far from good) and small, precise ones at the end. A constant learning rate has to be a compromise. I replaced it with a **constant learning rate of $3\times10^{-3}$** and left everything else the same (batch size $64$, $D=64$, $10$ epochs, $p_{\text{uncond}}=0.1$, $T=300$, $\gamma=5$, same sampling seed). I chose it as roughly the geometric mean of the scheduler's learning rates, $10^{-2}\cdot0.1^{1/2}\approx3.2\times10^{-3}$: it is smaller than $10^{-2}$ (which causes the large loss spike at the start of the scheduled run) but still large enough for the model to keep learning at the same pace for all 10 epochs. I used this one setting and did not tune it further.
-
-<div class="p3-code" markdown="1">
-
-<div class="p3-code-title">Code: Class-conditioned training without the scheduler</div>
-
-```python
-nosched_lr = 3e-3          # constant learning rate, ~ geometric mean of the scheduler: 1e-2 * 0.1**0.5
-
-model = ClassConditionalFM(ClassConditionalUNet(1, 10, 64), num_ts=300, p_uncond=0.1).to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=nosched_lr)
-scheduler = None            # no ExponentialLR; the learning rate stays at 3e-3 for all 10 epochs
-```
-
-</div>
 
 <div class="p3-grid c1 narrow">
   <figure>
@@ -1641,11 +1047,3 @@ The final result is the same: after epoch 10 the digits without the scheduler ar
 The idea that stayed with me from Part B is the *centroid* argument. A one-step denoiser trained on pure noise has to output the mean of the training set, because under MSE the best answer for an uninformative input is the average, and seeing that blob after training makes it clear why generation has to be done iteratively. Flow matching works because every intermediate $x_t$ already contains a little information about the final digit, and each Euler step only needs to use that information to take a small step. The time-only model shows what is still missing (it does not know which digit to commit to), and class conditioning with classifier-free guidance fixes this, which I could literally see in the grids.
 
 Part A showed me the same ideas at a much bigger scale. The starting time $t_0$ in image editing is a dial between *"trust the pixels"* and *"trust the model"*, and the interesting range (for me around $t_0=0.10$–$0.14$) is where the model keeps the composition and color layout of my drawing but re-renders the surfaces as a photograph. Classifier-free guidance is simply extrapolation along $v_c-v_u$, and the visual anagrams and hybrid images are just different ways of combining two guided velocities (averaging them in two different orientations, or splitting them by frequency band), so the connection to the frequency-domain ideas from Project 2 came back in the hybrids: the low-pass and high-pass split of the velocity decides which prompt you see from far away and which one up close.
-
-## Credits
-
-- Pretrained model: [PixNerd-XXL-P16-T2I](https://huggingface.co/MCG-NJU/PixNerd-XXL-P16-T2I). Project description and starter code: [CS180 Project 3 Part A](https://cal-cs180.github.io/fa26/hw/proj3-flow/parta.html) and [Part B](https://cal-cs180.github.io/fa26/hw/proj3-flow/partb.html).
-- Methods: [Flow Matching](https://arxiv.org/abs/2210.02747), [Classifier-Free Diffusion Guidance](https://arxiv.org/abs/2207.12598), [SDEdit](https://sde-image-editing.github.io/), [Visual Anagrams](https://dangeng.github.io/visual_anagrams/), and [Factorized Diffusion](https://arxiv.org/abs/2404.11615).
-- Images for Section 1 (Changbai Mountain), the pancake and dessert-cup photos, and the Golden Gate and Yosemite drawings are my own. The Campanile image is supplied by the course. The Moon Lord, `hajimi` cat, and Van Gogh images in Section 3.1 are downloaded from the web.
-<!-- TODO (Roy): add source links for the Moon Lord / hajimi / Van Gogh web images here, like the credits in Project 2 -->
-
