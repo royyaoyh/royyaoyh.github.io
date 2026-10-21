@@ -994,9 +994,3 @@ I sample the model without the scheduler using the same setup: 4 per digit, $T=3
 </table>
 
 By epoch 10, the constant-learning-rate model matches the scheduled model's sample quality. Epoch 5 has faint background speckle, while the scheduled model is cleaner; the table's last-batch losses are only indicative.
-
-## Things I learned
-
-The main lesson from Part B is the centroid argument: a denoiser trained on pure noise predicts the training-set mean, not a digit. Flow matching works iteratively because each $x_t$ gives the next step some information. Time-only conditioning leaves the digit ambiguous; class conditioning and CFG resolve it.
-
-Part A showed the same idea at image scale. In editing, $t_0$ balances preserving pixels with trusting the model; around $t_0=0.10$–$0.14$, my drawings kept their composition but became photo-like. CFG extrapolates along $v_c-v_u$, while anagrams combine rotated predictions and hybrids split low/high frequencies, connecting back to Project 2.
