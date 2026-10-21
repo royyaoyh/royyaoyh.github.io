@@ -22,6 +22,7 @@ window.MathJax = {
 .page__content h2, article h2 { font-size: 1.8em !important; }
 .page__content h3, article h3 { font-size: 1.45em !important; margin-top: 2em; }
 .page__content h4, article h4 { font-size: 1.2em !important; margin-top: 1.6em; }
+.page__content h5, article h5 { font-size: 1.05em !important; margin-top: 1.4em; text-transform: none !important; letter-spacing: normal !important; }
 .p3-grid { --n: 3; --g: 14px; display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: var(--g); margin: 1.4em auto 0.6em; }
 .p3-grid figure { display: block; margin: 0; min-width: 0; text-align: center; flex: 0 0 calc((100% - (var(--n) - 1) * var(--g)) / var(--n)); }
 .p3-grid figure.w2 { flex-basis: calc(2 * (100% - (var(--n) - 1) * var(--g)) / var(--n) + var(--g)); }
@@ -153,31 +154,31 @@ window.MathJax = {
 
 ## Overview
 
-This project is about flow models: generative models that learn a velocity field which carries Gaussian noise to clean images. In **Part A** I do not train anything. I use a pretrained text-to-image flow model, PixNerd-XXL-P16-T2I (512×512 output), and implement the sampling machinery around it: building noisy inputs, comparing classical, one-step, and iterative denoising, generating images from pure noise, classifier-free guidance (CFG), SDEdit-style image editing, visual anagrams, and hybrid images. In **Part B** I build the whole pipeline from scratch on MNIST: a UNet single-step denoiser first, then a time-conditioned and a class-conditioned flow matching model trained with the same recipe, with CFG at sampling time.
+Part A uses pretrained PixNerd for denoising, sampling, CFG, image editing, visual anagrams, and hybrids. Part B trains MNIST denoisers and time- and class-conditioned flow models from scratch.
 
-Throughout the project I use the **same time convention**: $t=0$ is pure noise and $t=1$ is a clean image, and the network predicts a *velocity*, not noise.
+I use $t=0$ for pure noise and $t=1$ for a clean image; the network predicts velocity, not noise.
 
 ## Part A: Exploring the Power of Flow Models
 
-Setup for every Part A experiment: PixNerd-XXL-P16-T2I with the Qwen3 text encoder, float32, random seed $180$, Euler step size $h=0.02$, and CFG weight $w=7$ whenever guidance is used. The unconditional branch of CFG always uses the empty prompt `""`. No gradients are needed in Part A, so nothing is trained.
+Part A uses PixNerd-XXL-P16-T2I with Qwen3, float32, seed $180$, and step size $h=0.02$. Guidance uses $w=7$ and an empty unconditional prompt; no training or gradients are needed.
 
 <div class="p3-note" markdown="1">
 
 **Flow matching recap (Part A conventions)**
 
-Linear interpolation between Gaussian noise $\epsilon\sim\mathcal{N}(0,I)$ and a clean image $x_1$:
+Interpolate between Gaussian noise $\epsilon\sim\mathcal{N}(0,I)$ and a clean image $x_1$:
 
 $$
 x_t=(1-t)\,\epsilon+t\,x_1,\qquad t\in[0,1].
 $$
 
-Training teaches the network $v_\theta(x_t,t,c)$ to predict the path velocity $x_1-\epsilon$ for a condition $c$ (a text prompt here):
+The model learns $v_\theta(x_t,t,c)$ to predict path velocity $x_1-\epsilon$ for condition $c$:
 
 $$
 \mathcal{L}(\theta)=\mathbb{E}\left[\left\|v_\theta(x_t,t,c)-(x_1-\epsilon)\right\|_2^2\right].
 $$
 
-Sampling starts at $x_0=\epsilon$ and follows the learned ODE to $t=1$:
+Sampling follows the learned ODE from $x_0=\epsilon$ to $t=1$:
 
 $$
 \frac{dx_t}{dt}=v_\theta(x_t,t,c).
@@ -189,53 +190,49 @@ $$
 
 #### Choosing my image
 
-For Sections 1.1–1.5 I use one image of my own (a photo of Changbai Mountain and its crater lake, Heaven Lake) instead of the Campanile. The photo loaded sideways, so I rotated it by $90^\circ$ before using it. The supplied preprocessing center-crops and resizes it to $512\times512$ with RGB in $[-1,1]$. The preprocessed original is the leftmost panel of the figure in Section 1.1 below.
+For Sections 1.1–1.5 I use my photo of Changbai Mountain's Heaven Lake, rotated by $90^\circ$ and resized to $512\times512$ with RGB in $[-1,1]$.
 
 #### 1.1 Constructing Noisy Training Inputs
 
-Given a clean image $x_1$ and a Gaussian noise sample $\epsilon$, the noisy input at time $t$ is
+Given clean image $x_1$ and noise $\epsilon$, the input at time $t$ is:
 
 $$
 x_t=(1-t)\,\epsilon+t\,x_1 .\tag{A.1}
 $$
 
-This is **not** just adding noise: the image itself is scaled by $t$, and the noise by $1-t$. The two endpoints are $x_{0}=\epsilon$ (pure noise) and $x_{1}=x_1$ (clean image), which I verified numerically: interpolating at $t=0$ returns exactly the noise and at $t=1$ returns exactly the image. The amplitudes tell us how much image there is compared with noise: the signal-to-noise ratio of $x_t$ is
-
-$$
-\mathrm{SNR}(t)=\frac{t^2}{(1-t)^2}.
-$$
+The image is scaled by $t$, noise by $1-t$, and $x_t$ interpolates between them. At $t=0$ the input is pure noise; at $t=1$ it is clean. I verified both endpoints numerically: $x_{0}=\epsilon$ and $x_{1}=x_1$.
 
 <table class="p3-table" style="width:auto; display:table; margin:1em auto;">
-  <thead><tr><th>$t$</th><th>image amplitude $t$</th><th>noise amplitude $1-t$</th><th>$\mathrm{SNR}(t)$</th></tr></thead>
+  <thead><tr><th>$t$</th><th>image amplitude $t$</th><th>noise amplitude $1-t$</th></tr></thead>
   <tbody>
-    <tr><td>0.25</td><td>0.25</td><td>0.75</td><td>1/9 ≈ 0.11</td></tr>
-    <tr><td>0.50</td><td>0.50</td><td>0.50</td><td>1</td></tr>
-    <tr><td>0.75</td><td>0.75</td><td>0.25</td><td>9</td></tr>
+    <tr><td>0.25</td><td>0.25</td><td>0.75</td></tr>
+    <tr><td>0.50</td><td>0.50</td><td>0.50</td></tr>
+    <tr><td>0.75</td><td>0.75</td><td>0.25</td></tr>
   </tbody>
 </table>
 
-I sampled **one** noise tensor $\epsilon$ (`noise(SEED)`, seed $180$) and reused it for all three times, so the three noisy images differ only through $t$. I saved the original image, $\epsilon$, and the three noisy tensors for Sections 1.2–1.5 (Section 1.4 needs the original image/noise pair for the ground-truth velocity).
+I reused one noise tensor $\epsilon$ (`noise(SEED)`, seed $180$) at all three times, so only $t$ changes. I saved the original image, $\epsilon$, and the tensors for Sections 1.2–1.5, including the pair needed for the ground-truth velocity.
 
 <div class="p3-grid c1 medium">
   <figure>
     <img src="/images/cs180/proj3/part_a/part_1/1_1.png" alt="Original image and the noisy versions at t=0.25, t=0.50, and t=0.75" loading="lazy">
-    <figcaption>Original image and the noisy versions at $t=0.25$, $t=0.50$, and $t=0.75$</figcaption>
+    <figcaption>Original image (Changbai Mountain in China)and the noisy versions at $t=0.25$, $t=0.50$, and $t=0.75$</figcaption>
   </figure>
 </div>
 
-Larger $t$ keeps more of the image: at $t=0.75$ the scene is clearly visible under mild noise, at $t=0.50$ the large structures are still readable, and at $t=0.25$ the noise dominates (the noise amplitude is three times the image amplitude).
+Larger $t$ keeps more detail: $t=0.75$ is clearest, $t=0.50$ retains large structures, and noise dominates at $t=0.25$.
 
 #### 1.2 Classical Denoising
 
-As a baseline without any learned model, I use a Gaussian blur. Averaging neighbouring pixels partially cancels independent zero-mean noise, but it also removes image detail. Because the image is scaled by $t$ inside $x_t$, I first restore its amplitude and then blur:
+For a non-learned baseline, I restore the image amplitude in $x_t$ because it is scaled by $t$, then apply Gaussian blur. Averaging nearby pixels reduces noise but also removes detail:
 
 $$
 \frac{x_t}{t}=x_1+\frac{1-t}{t}\,\epsilon,\qquad \hat{x}_1^{\mathrm{blur}}=G_\sigma\!\left(\frac{x_t}{t}\right).
 $$
 
-Dividing by $t$ fixes the image amplitude, but it does **not** remove noise. In fact it amplifies the noise to a standard deviation of $\frac{1-t}{t}$, which is $3$, $1$, and $\tfrac13$ for $t=0.25,\,0.50,\,0.75$. So the baseline has a much harder job at small $t$.
+Dividing by $t$ restores image amplitude but amplifies noise to standard deviation $\frac{1-t}{t}$: $3$, $1$, and $\tfrac13$ at $t=0.25,\,0.50,\,0.75$. The problem is worse at small $t$.
 
-For each noisy input I swept $\sigma\in\{1,2,4,8,16\}$ (kernel size $6\sigma+1$) and kept the $\sigma$ with the lowest mean squared error to the known clean image. This is an *oracle* baseline: it peeks at the ground truth to choose $\sigma$, so a real classical denoiser would do no better than this. The chosen $\sigma$ is printed in each panel title.
+I tested $\sigma\in\{1,2,4,8,16\}$ (kernel size $6\sigma+1$) and kept the $\sigma$ with lowest MSE against the clean image. This oracle baseline uses ground truth to select $\sigma$; the chosen $\sigma$ appears in each panel title.
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -244,23 +241,23 @@ For each noisy input I swept $\sigma\in\{1,2,4,8,16\}$ (kernel size $6\sigma+1$)
   </figure>
 </div>
 
-The blur trades noise for detail. When the noise is strong ($t=0.25$) even the best blur is a large one, so what is left is a smooth colour layout with no texture; when the noise is mild ($t=0.75$) a small $\sigma$ already works, but it still softens fine detail such as the rocks and the ice on the lake. A Gaussian filter cannot distinguish noise from fine image texture, since both are high-frequency, and that is the limit of this baseline.
+Blur reduces noise but also removes detail. At $t=0.25$, the best result needs a large $\sigma$ and keeps only smooth colors; at $t=0.75$, rocks and lake ice remain soft. Gaussian blur cannot separate noise from fine texture.
 
 #### 1.3 One-Step Denoising
 
-Now I use the pretrained flow model. `predict_velocity(x, t, condition)` returns the predicted velocity $v_\theta(x_t,t,c)$. If the velocity were exactly $x_1-\epsilon$ and constant along the path, one step to $t=1$ would be exact:
+The pretrained model returns $v_\theta(x_t,t,c)$ through `predict_velocity(x, t, condition)`. If the true velocity were exactly $x_1-\epsilon$ and constant, one step to $t=1$ would recover the image:
 
 $$
 x_t+(1-t)(x_1-\epsilon)=(1-t)\epsilon+t x_1+(1-t)x_1-(1-t)\epsilon=x_1 .
 $$
 
-So the one-step clean-image estimate is
+The one-step clean-image estimate is:
 
 $$
 \hat{x}_1=x_t+(1-t)\,v_\theta(x_t,t,c).\tag{A.2}
 $$
 
-The network predicts a **velocity**, not noise, so the prediction is added with the factor $(1-t)$ rather than subtracted. I use the prompt `"a high quality photo"` and check that the returned velocity has the same shape, dtype, and device as the input and is finite.
+Velocity is added with $(1-t)$, not subtracted. I use the prompt `"a high quality photo"` and verify the prediction's shape, dtype, device, and finite values.
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -269,25 +266,25 @@ The network predicts a **velocity**, not noise, so the prediction is added with 
   </figure>
 </div>
 
-The one-step estimate is a much better denoiser than the blur, because the network has learned what natural images look like, but it is still soft. This is expected: the trained velocity at $(x_t,t)$ approximates the conditional mean $\mathbb{E}[x_1-\epsilon\mid x_t]$, so $x_t+(1-t)v_\theta$ approximates the posterior mean $\mathbb{E}[x_1\mid x_t]$, an average over all clean images consistent with the noisy one. When the noisy input is ambiguous ($t=0.25$) that average is blurry and lacks fine detail; at $t=0.75$ the posterior is narrow and the estimate is closer to the original.
+The one-step result from $x_t$ beats blur but is still soft. The predicted velocity at $(x_t,t)$ approximates $\mathbb{E}[x_1-\epsilon\mid x_t]$, so $x_t+(1-t)v_\theta$ approximates $\mathbb{E}[x_1\mid x_t]$, an average of plausible clean images. It is blurrier at $t=0.25$ and closer to the original at $t=0.75$.
 
 #### 1.4 Visualizing Velocity
 
-In Section 1.3 we added $(1-t)\hat v_t$ to $x_t$. Here I visualize what the model adds and compare it with what *should* be added. Since we know the original image and the noise, the exact update is $x_1-x_t$:
+Section 1.3 adds $(1-t)\hat v_t$ to $x_t$. Here I compare it with the exact update $x_1-x_t$.
 
 $$
 v_{\mathrm{gt}}=x_1-\epsilon,\qquad (1-t)\,v_{\mathrm{gt}}=x_1-x_t,\qquad \hat v_t=v_\theta(x_t,t,c).
 $$
 
-The per-pixel error heatmap is the RMS difference of the two updates across the RGB channels (squared channel differences, averaged over RGB, then square root, computed **before** any display scaling or clipping):
+The heatmap shows per-pixel RMS error across RGB, computed before display scaling or clipping:
 
 $$
 E_t(i,j)=\sqrt{\operatorname{mean}_{\mathrm{RGB}}\!\left(\Big[(1-t)\big(\hat v_t-v_{\mathrm{gt}}\big)\Big]^2\right)} .
 $$
 
-For display, both updates use the same symmetric RGB scale (zero is mid-gray), and the three error maps share the same color limits, so the three times are directly comparable.
+Both updates share a symmetric RGB scale (zero is mid-gray); all error maps use the same limits.
 
-The original image is shown once, as the leftmost panel of the Section 1.1 figure above; it is the clean image $x_1$ used for every row below.
+The original $x_1$ is shown once in Section 1.1.
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -304,21 +301,21 @@ The original image is shown once, as the leftmost panel of the Section 1.1 figur
   </figure>
 </div>
 
-Two things stand out. First, both updates shrink as $t$ grows, because they carry the factor $(1-t)$: at $t=0.75$ only a quarter of the velocity is added. Second, the predicted update reproduces the large-scale structure of the ground-truth update (sky versus ground, the dark rocks), but not its exact fine-grained pattern. The ground-truth update contains the *specific* noise realization $\epsilon$ that was mixed in, which the network cannot know exactly, so it predicts the part that is consistent with natural images. That is why the error is concentrated on fine texture and edges rather than on smooth regions.
+As $t$ grows, both updates shrink with $(1-t)$; at $t=0.75$ only one-quarter is added. The prediction captures large structures but cannot recover the exact noise $\epsilon$, so errors cluster around fine texture and edges.
 
 #### 1.5 Iterative Denoising with Euler Sampling
 
-One-step denoising is inaccurate because the learned velocity **changes** along the path: the predicted direction depends on the current image and time, so the real sampling trajectory is curved. Instead of one big step I take many small Euler steps and recompute the velocity after each one:
+The velocity changes along the path, so one large step is inaccurate. I recompute it after each small Euler step:
 
 $$
 x_{t+h}=x_t+h\,v_\theta(x_t,t,c).\tag{A.3}
 $$
 
-With start time $t_0$ and step size $h=0.02$, the times are $t_k=t_0+kh$ and the number of steps is $N=\lceil (1-t_0)/h\rceil$. The last step is shortened, $h_k=\min(h,\,1-t_k)$, so the integration ends exactly at $t=1$. For $t_0=0.5$ this is $25$ updates; for $t_0=0$ it is $50$.
+Starting at $t_0$ with $h=0.02$, I use $t_k=t_0+kh$ and $N=\lceil (1-t_0)/h\rceil$. The last step is shortened to $h_k=\min(h,\,1-t_k)$ so sampling ends at $t=1$. For $t_0=0.5$ this is $25$ steps; for $t_0=0$ it is $50$.
 
-**Test with a constant velocity field.** For $v\equiv 1$ the exact answer after integrating from $t_0$ to $1$ is $x=x_{\text{start}}+(1-t_0)$. I check this on a toy tensor, including a start time that needs a shortened last step. The result matches the analytic answer for $t_0=0$ (50 full steps), $t_0=0.5$ (25 steps), and $t_0=0.93$ (4 steps, the last one only $0.01$ long).
+For $v\equiv 1$, integrating from $t_0$ to $1$ gives $x=x_{\text{start}}+(1-t_0)$. The test matches for $t_0=0$ (50 steps), $t_0=0.5$ (25), and $t_0=0.93$ (4, with a final step of $0.01$).
 
-Starting from the saved $t=0.50$ noisy image I run the $25$ Euler updates with `"a high quality photo"`. The figure shows the initial state, every fifth update, and the final image, labeled by time ($t=0.50,\,0.60,\,0.70,\,0.80,\,0.90,\,1.00$).
+I run the $25$ Euler updates from the saved $t=0.50$ input with `"a high quality photo"`. The figure shows the start, every fifth update, and the final image (labels: $t=0.50,\,0.60,\,0.70,\,0.80,\,0.90,\,1.00$).
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -327,7 +324,7 @@ Starting from the saved $t=0.50$ noisy image I run the $25$ Euler updates with `
   </figure>
 </div>
 
-Now the final Euler result compared with the original, the one-step estimate (Section 1.3), and the Gaussian blur (Section 1.2), all from the **same** $t=0.50$ noisy input:
+I compare the Euler result with the original, blur, and one-step estimate from the same $t=0.50$ input:
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -336,11 +333,11 @@ Now the final Euler result compared with the original, the one-step estimate (Se
   </figure>
 </div>
 
-The trajectory first settles the large structures (sky, horizon, the lake) and only later adds fine detail, which matches the picture of a velocity field that moves from noise toward the data manifold. The iterative result is the sharpest and most natural of the three denoisers: the Gaussian blur is soft everywhere, and the one-step estimate is better but still averaged. Because every Euler step re-evaluates the velocity at the current, less noisy image, the network gets to commit to details as the ambiguity decreases, instead of having to predict the posterior mean from the very noisy $t=0.50$ input in one shot.
+Euler sampling recovers large structures first, then details. For the same $t=0.50$ input, it gives the sharpest result because each step re-evaluates velocity on a less-noisy image; blur and one-step denoising remain soft.
 
 #### 1.6 Generating Images from Noise
 
-The same Euler sampler also generates images from scratch: I set $t_{\text{start}}=0$ and start from pure Gaussian noise, which means denoising pure noise with $50$ Euler updates. I use the prompt `"a high quality photo"` and five independent initial noises (seeds $180$–$184$, kept so that Section 2.1 can reuse **exactly the same noises**).
+I generate five images from pure noise with $t_{\text{start}}=0$, $50$ Euler updates, and `"a high quality photo"` (seeds $180$–$184$). I reuse these noises in Section 2.1.
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -349,21 +346,21 @@ The same Euler sampler also generates images from scratch: I set $t_{\text{start
   </figure>
 </div>
 
-The generic prompt does not specify any subject, so the model falls back on whatever it most associates with "a high quality photo" and the five seeds show a narrow range of subjects and a plain, soft look instead of confident, well-composed pictures. The images are plausible but not very sharp or well aligned with the prompt, which is what CFG improves in the next section.
+The generic prompt gives plausible but soft images with limited variety. CFG should improve sharpness and prompt alignment.
 
 ### Section 2: Conditional Generation and Guidance
 
 #### 2.1 Classifier-Free Guidance (CFG)
 
-To improve prompt alignment and image quality, at the expense of diversity, I use classifier-free guidance. At every step I evaluate the model twice on the **same** $x_t$ and $t$: once with the text prompt ($v_c$) and once with the empty-string prompt ($v_u$). Then I extrapolate from the unconditional prediction past the conditional one:
+For CFG, I evaluate the same $x_t$ and $t$ with the text prompt ($v_c$) and empty prompt ($v_u$), then extrapolate past the conditional prediction:
 
 $$
 v_{\mathrm{cfg}}=v_c+w\,(v_c-v_u).\tag{A.4}
 $$
 
-$w=0$ is ordinary conditional sampling. I use $w=7$ and $h=0.02$. Equivalently, $v_{\mathrm{cfg}}=v_u+(1+w)(v_c-v_u)$, so the guided velocity moves $1+w$ times as far in the "prompt direction" $v_c-v_u$.
+I use $w=7$ and $h=0.02$; $w=0$ gives ordinary conditional sampling. Equivalently, $v_{\mathrm{cfg}}=v_u+(1+w)(v_c-v_u)$, so guidance scales the direction $v_c-v_u$ by $1+w$.
 
-Here are five CFG samples with `"a high quality photo"`, using the same initial noises as Section 1.6 (seeds $180$–$184$). For direct comparison, the unguided samples from Section 1.6 are shown first.
+I compare five guided samples at seeds $180$–$184$ with the unguided outputs from Section 1.6.
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -376,38 +373,38 @@ Here are five CFG samples with `"a high quality photo"`, using the same initial 
   </figure>
 </div>
 
-With the same starting noise, CFG changes the pictures substantially: they become sharper, higher in contrast and saturation, and more clearly "a high quality photograph" of a recognizable subject. This is the quality and prompt-alignment gain that guidance is designed to give. The cost is diversity: because every step is pushed $1+w=8$ times as far along $v_c-v_u$, the five samples are pushed toward the same kind of prototypical, well-lit photo and look more alike than the unguided ones, and large $w$ can also oversaturate colors.
+With the same noise, CFG produces sharper, more saturated, more prompt-aligned images. Samples are less diverse because $1+w=8$ pushes them strongly along $v_c-v_u$; large $w$ can oversaturate colors.
 
 ### Section 3: Creative Applications
 
-In this section I use flow sampling to edit existing images and to make optical illusions. Throughout, I use Euler step size $h=0.02$, CFG weight $w=7$, and the empty prompt `""` for the unconditional prediction.
+I use flow sampling for image editing and optical illusions, with Euler step size $h=0.02$, CFG weight $w=7$, and `""` as the unconditional prompt.
 
 #### 3.1 Image-to-Image Editing
 
-This is the SDEdit idea. Take a real image $x_1$, noise it only up to some starting time $t_0$, and then run the guided sampler from $t_0$ to $1$:
+Following SDEdit, I noise a real image $x_1$ to starting time $t_0$, then run guided sampling from $t_0$ to $1$:
 
 $$
 x_{t_0}=(1-t_0)\,\epsilon+t_0\,x_1,\qquad x_{t+h}=x_t+h\,v_{\mathrm{cfg}}(x_t,t,c)\quad\text{for } t=t_0,\dots,1 .
 $$
 
-The model has to "hallucinate" whatever the noise destroyed, so it effectively pushes the noisy image back onto the manifold of natural images. A **smaller** $t_0$ means more noise and a bigger edit; a **larger** $t_0$ keeps more of the original. I reuse the same $\epsilon$ (seed $180$) for every starting time, so only $t_0$ changes across a row. The starting times are $t_0\in\{0.02,0.04,0.06,0.10,0.14,0.25,0.50\}$ and the prompt is `"a high quality photo"`.
+Smaller $t_0$ adds more noise and changes more; larger $t_0$ preserves the input. The starting time $t_0$ is the only variable across each row. I reuse seed $180$ for $\epsilon$ and test $t_0\in\{0.02,0.04,0.06,0.10,0.14,0.25,0.50\}$ with `"a high quality photo"`.
 
-How much of the original is left in the starting image at each $t_0$ (the SNR is $t_0^2/(1-t_0)^2$ as in Section 1.1, and the number of Euler updates is $\lceil(1-t_0)/h\rceil$):
+For each start time $t_0$, Euler updates are given by $\lceil(1-t_0)/h\rceil$:
 
 <table class="p3-table" style="width:auto; display:table; margin:1em auto;">
-  <thead><tr><th>start time $t_0$</th><th>SNR of $x_{t_0}$</th><th>Euler updates</th></tr></thead>
+  <thead><tr><th>start time $t_0$</th><th>Euler updates</th></tr></thead>
   <tbody>
-    <tr><td>0.02</td><td>0.0004</td><td>49</td></tr>
-    <tr><td>0.04</td><td>0.0017</td><td>48</td></tr>
-    <tr><td>0.06</td><td>0.0041</td><td>47</td></tr>
-    <tr><td>0.10</td><td>0.0123</td><td>45</td></tr>
-    <tr><td>0.14</td><td>0.0265</td><td>43</td></tr>
-    <tr><td>0.25</td><td>0.1111</td><td>38</td></tr>
-    <tr><td>0.50</td><td>1.0000</td><td>25</td></tr>
+    <tr><td>0.02</td><td>49</td></tr>
+    <tr><td>0.04</td><td>48</td></tr>
+    <tr><td>0.06</td><td>47</td></tr>
+    <tr><td>0.10</td><td>45</td></tr>
+    <tr><td>0.14</td><td>43</td></tr>
+    <tr><td>0.25</td><td>38</td></tr>
+    <tr><td>0.50</td><td>25</td></tr>
   </tbody>
 </table>
 
-So for $t_0\le 0.06$ the starting image holds well under $1\%$ of signal power compared with noise, and the sampler is nearly generating from scratch; only at $t_0=0.50$ do image and noise have equal power.
+For $t_0\le 0.06$, the input is nearly pure noise; at $t_0=0.50$, the original is much better preserved.
 
 **Campanile.**
 
@@ -418,28 +415,28 @@ So for $t_0\le 0.06$ the starting image holds well under $1\%$ of signal power c
   </figure>
 </div>
 
-As $t_0$ increases the output matches the Campanile more and more closely: with very little of the image left the model produces an unrelated photo that only keeps a vague color or shape, the tower and its layout come back in the middle range, and by $t_0=0.50$ the edit is close to the original.
+As $t_0$ increases, the output moves from an unrelated image toward the original Campanile. Its layout returns in the middle range; at $t_0=0.50$, the edit is close to the input.
 
-**Two of my own test images.** The first is a plate with a pancake and blueberries held in one hand (`pancake`); the second is a cup of dessert held in one hand, which I rotated by $90^\circ$ clockwise before use (`yopo`).
+My test images are a pancake-and-blueberry plate (`pancake`) and a dessert cup from Yogurt Park (`yopo`), rotated $90^\circ$ clockwise.
 
 <div class="p3-grid c1 ">
   <figure>
     <img src="/images/cs180/proj3/part_a/part_3/pancake_edit_my_image_1.png" alt="My image 1 (pancake plate), prompt 'a high quality photo'" loading="lazy">
-    <figcaption>My image 1 (pancake plate), prompt "a high quality photo"</figcaption>
+    <figcaption>My image 1 (Pancake Plate), prompt "a high quality photo"</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj3/part_a/part_3/yopo_edit_my_image_2.png" alt="My image 2 (cup of dessert), prompt 'a high quality photo'" loading="lazy">
-    <figcaption>My image 2 (cup of dessert), prompt "a high quality photo"</figcaption>
+    <figcaption>My image 2 (Cup of Dessert at Yogurt Park), prompt "a high quality photo"</figcaption>
   </figure>
 </div>
 
-For the dessert cup, the start of the sweep shows how little the model keeps from a nearly pure-noise input: at $t_0=0.02$ the sampler generates a close-up of a man's face, at $t_0=0.04$ and $0.06$ it keeps only the hand and invents a tablet-like object, at $t_0=0.10$ and $0.14$ it keeps the hand and some of the colors (the yellow of the tactile paving, the green of the spoon, a pink block) but not the cup, and from $t_0=0.25$ the cup with its pink lid is recognizable again. At $t_0=0.50$ the result is almost the input.
+For `yopo`, $t_0=0.02$ produces a man's face; $t_0=0.04$ and $0.06$ retain only the hand and invent an object. At $t_0=0.10$ and $0.14$, only the hand and some colors remain. The cup returns at $t_0=0.25$, and $t_0=0.50$ is close to the input.
 
 #### Editing hand-drawn and web images
 
-This procedure works best on non-realistic inputs (drawings, paintings), because the edit projects them onto the manifold of natural images. Here I use one image from the web and two of my own hand drawings, with the same seven starting times.
+This sweep shows how editing pushes non-realistic inputs toward natural-looking images. I test one web image and two hand drawings.
 
-**Web image.**
+**Web image: Moon Lord from Terraria.** The input is flat game art, so it starts far from the natural-image manifold. At $t_0=0.02$ the original is gone and the model gives an unrelated photo; at $t_0=0.04$ and $0.06$, only the color palette and rough layout remain. At $t_0=0.10$ and $0.14$, the creature's shapes are re-rendered with photographic texture and lighting while the overall composition is kept. For $t_0\ge0.25$, the flat game art returns with only subtle texture changes.
 
 <div class="p3-grid c1 ">
   <figure>
@@ -448,7 +445,7 @@ This procedure works best on non-realistic inputs (drawings, paintings), because
   </figure>
 </div>
 
-**Hand drawing 1: Golden Gate Bridge.** At $t_0=0.02$ the drawing is gone entirely and the sampler produces a portrait of a smiling woman in a cap. At $t_0=0.04$ and $0.06$ the only thing that survives is the color layout: blue and pink blocks rearranged into a hand-held device and a lamp. At $t_0=0.10$ and $0.14$ the model turns my flat drawing into a **photograph of a bridge**: the tower, the cables, and the red-brown color are kept, and clouds and soft shading are added. For $t_0\ge0.25$ the flat drawing style returns (with a slightly textured look), so the edit is subtle.
+**Hand drawing 1: Golden Gate Bridge.** At $t_0=0.02$ the model gives a portrait; at $t_0=0.04$ and $0.06$, only colors remain. At $t_0=0.10$ and $0.14$, the tower and cables become a photo-style bridge. For $t_0\ge0.25$, the flat drawing returns.
 
 <div class="p3-grid c1 ">
   <figure>
@@ -457,7 +454,7 @@ This procedure works best on non-realistic inputs (drawings, paintings), because
   </figure>
 </div>
 
-**Hand drawing 2: Yosemite.** Again $t_0=0.02$ gives an unrelated image (a woman sitting on a couch), and at $t_0=0.04$ and $0.06$ the model builds a modern building in a landscape from the grey and green blocks. At $t_0=0.10$ and $0.14$ the drawing becomes a **realistic photograph of a mountain valley**: the granite walls, the sky, and the forest are all rendered as photo textures, while a few traces of my drawing remain (white patches and a black bar, the latter even turned into scribbled lettering). From $t_0=0.25$ it is back to the flat drawing.
+**Hand drawing 2: Tunnel View at Yosemite National Park.** At $t_0=0.02$ the model gives an unrelated portrait; at $t_0=0.04$ and $0.06$, the blocks become a building. At $t_0=0.10$ and $0.14$, the valley becomes photorealistic with a few drawing marks left. The flat drawing returns at $t_0=0.25$.
 
 <div class="p3-grid c1 ">
   <figure>
@@ -466,14 +463,14 @@ This procedure works best on non-realistic inputs (drawings, paintings), because
   </figure>
 </div>
 
-The sweet spot for turning a drawing into a photo is around $t_0=0.10$–$0.14$: enough of the drawing remains to fix the composition, but enough noise has been added that the model re-renders surfaces as photographic textures. Below that the model ignores the drawing, above it the model just trusts the pixels.
+The best range for turning drawings into photos is $t_0=0.10$–$0.14$: enough structure remains to guide composition, while noise lets the model add photo textures.
 
-**Extra experiments** (same procedure): the `hajimi` cat image and a Van Gogh painting.
+**Paintings from my sister**: a cat painting and a Van Gogh painting.
 
 <div class="p3-grid c1 ">
   <figure>
     <img src="/images/cs180/proj3/part_a/part_3/cat_edit_drawing_3.png" alt="Extra: cat image, prompt 'a high quality photo'" loading="lazy">
-    <figcaption>Extra: cat image, prompt "a high quality photo"</figcaption>
+    <figcaption>Extra: cat painting, prompt "a high quality photo"</figcaption>
   </figure>
   <figure>
     <img src="/images/cs180/proj3/part_a/part_3/van_gogh_edit_drawing_4.png" alt="Extra: Van Gogh painting, prompt 'a high quality photo'" loading="lazy">
@@ -483,7 +480,7 @@ The sweet spot for turning a drawing into a photo is around $t_0=0.10$–$0.14$:
 
 #### 3.2 Text-Guided Image Editing
 
-Same procedure as 3.1, but the generic prompt is replaced by a prompt that describes the **desired edit**. The prompt guides how the model fills in the noise, so now the starting time decides the balance between *the prompt* (small $t_0$) and *the original image* (large $t_0$).
+I use the same procedure as Section 3.1, but describe the desired edit. Smaller $t_0$ favors the prompt; larger $t_0$ preserves the original.
 
 <table class="p3-table" style="width:auto; display:table; margin:1em auto;">
   <thead><tr><th>Image</th><th>Prompt</th></tr></thead>
@@ -503,9 +500,9 @@ Same procedure as 3.1, but the generic prompt is replaced by a prompt that descr
   </figure>
 </div>
 
-Small $t_0$ lets the prompt win and the output is unrelated to the Campanile; large $t_0$ lets the tower win. In between, the clock-tower silhouette is kept while the prompt re-styles it toward the target landmark.
+At small $t_0$, Big Ben dominates; at large $t_0$, the Campanile returns. In between, its tower silhouette remains but takes on Big Ben's style.
 
-**Pancake plate to a seafood feast.** The prompt rewrites the plate completely. At $t_0=0.02$ to $0.06$ the original is gone and the result is an unrelated seafood platter. At $t_0=0.10$ and $0.14$ the **composition of my photo is kept** (a round plate seen from above on a brown table, forks at the top left, the plate in the middle) and the food on it becomes a lobster, mussels, and lemon wedges. At $t_0=0.25$ the plate rim with its blue-and-white pattern comes back and the food becomes a mix of pancake-colored and seafood elements with steam rising, and at $t_0=0.50$ the pancake with blueberries is basically back with only a few seafood elements (a claw and dark mussels) mixed in.
+**Pancake plate to a seafood feast.** At $t_0=0.02$ to $0.06$, the pancake is replaced by a seafood platter. At $t_0=0.10$ and $0.14$, the plate composition remains while seafood replaces the food. At $t_0=0.25$, pancake and seafood features mix; at $t_0=0.50$, the original pancake mostly returns.
 
 <div class="p3-grid c1 ">
   <figure>
@@ -514,7 +511,7 @@ Small $t_0$ lets the prompt win and the output is unrelated to the Campanile; la
   </figure>
 </div>
 
-**Dessert cup to a man with pink and green hair.** For $t_0\le0.06$ the result is a portrait of a man with pink and green hair that has nothing to do with the cup, but at $t_0=0.10$ and $0.14$ it keeps the **colors and the blurred background** of my photo (grey ground, the yellow strip) and the pink and green of the original (pink dessert, green spoon) show up as the hair. At $t_0=0.25$ the pink dessert has turned into a pink head of hair growing out of the cup, with the green spoon still visible, and at $t_0=0.50$ the cup is back and the swirled dessert only has a pastel pink-green tint.
+**Dessert cup to a man with pink and green hair.** For $t_0\le0.06$, the model generates an unrelated portrait. At $t_0=0.10$ and $0.14$, it uses the image's pink and green as hair while retaining some background colors. At $t_0=0.25$, hair grows from the cup; at $t_0=0.50$, the cup returns with a pastel tint.
 
 <div class="p3-grid c1 ">
   <figure>
@@ -523,11 +520,11 @@ Small $t_0$ lets the prompt win and the output is unrelated to the Campanile; la
   </figure>
 </div>
 
-The comparison with Section 3.1 on the same image is the instructive part: with the generic prompt the dessert cup is lost for $t_0\le0.14$ and the model invents a face, a tablet, and a fist; with a prompt that mentions pink and green, the same colors from the photo are *used* to build the target. The text prompt turns the model's "creativity" into a direction instead of leaving it random.
+Unlike the generic prompt in Section 3.1, the dessert cup is lost for $t_0\le0.14$ and the model invents faces or objects. The pink/green prompt reuses the image's colors to build the requested hair.
 
 #### 3.3 Visual Anagrams
 
-A visual anagram is a single image that shows one subject upright and a different subject when rotated by $180^\circ$. I build it by denoising $x_t$ with prompt $p_1$ and, at the same time, denoising the **rotated** $x_t$ with prompt $p_2$, then rotating the second velocity back and averaging:
+A visual anagram shows one subject upright and another after a $180^\circ$ rotation. I denoise $x_t$ with prompt $p_1$ and the rotated image with $p_2$, then rotate the second velocity back and average:
 
 $$
 v_1=v_{\mathrm{cfg}}(x_t,t,p_1),
@@ -541,9 +538,9 @@ $$
 v=\frac{v_1+v_2}{2},\qquad x_{t+h}=x_t+h\,v .
 $$
 
-Here $\operatorname{flip}(\cdot)$ is a $180^\circ$ rotation, i.e., it flips **both** spatial axes (not just a vertical mirror), so $\operatorname{flip}(\operatorname{flip}(x))=x$ (which I assert in the notebook). Why it works: $\operatorname{flip}$ only permutes pixels, so the flipped noisy image is still a valid noisy image (Gaussian noise is unchanged by permuting pixels), and the network can denoise it with the second prompt. Averaging forces both views to agree on one image: each Euler step moves $x_t$ in a direction that increases the likelihood of $p_1$ when seen upright and the likelihood of $p_2$ when seen rotated.
+Here $\operatorname{flip}(\cdot)$ rotates by $180^\circ$ across both spatial axes, so $\operatorname{flip}(\operatorname{flip}(x))=x$. At each step, I evaluate $\operatorname{flip}$ on $x_t$ with $p_1$ and on the rotated $x_t$ with $p_2$. Pixel permutation preserves the noise distribution; averaging the guided velocities encourages both views.
 
-Each figure below shows the **same** generated image upright (left, prompt $p_1$) and rotated by $180^\circ$ (right, prompt $p_2$). I tried several prompt and seed combinations, because a numerically successful run does not guarantee that both subjects are recognizable.
+Each result is shown upright for $p_1$ and rotated $180^\circ$ for $p_2$. I tried multiple prompt/seed combinations because some runs do not make both subjects recognizable.
 
 <table class="p3-table" style="width:auto; display:table; margin:1em auto;">
   <thead><tr><th>Illusion</th><th>Upright prompt $p_1$</th><th>Rotated prompt $p_2$</th><th>Seed</th></tr></thead>
@@ -577,11 +574,24 @@ Each figure below shows the **same** generated image upright (left, prompt $p_1$
   </figure>
 </div>
 
-The **old man / campfire** illusion works best: the glowing forehead and hair of the old man become the fire, and his dark robes and shoulders become the people leaning in around it, so both readings are clear and the oil-painting style is consistent. The **angel / demon** pair works because both are frontal, roughly symmetric figures, so the angel's head and outstretched wings land on the demon's horns and arms after rotation. The **village / horse** and **Chinese / European village** pairs are weaker: in the horse view the strokes of the mountain and the houses are visible as a faint overlay, and the two village scenes are similar enough that the difference is mostly in the roof shapes. In general it helps when the two subjects have similar layouts and similar overall color and tone, and the style words (`oil painting`, `lithograph`, `watercolor`) keep both views from diverging.
+For illusions 3 and 4, here are the generated images themselves, in the orientation of the upright prompt $p_1$:
+
+<div class="p3-grid c2 medium">
+  <figure>
+    <img src="/images/cs180/proj3/part_a/part_3/angel_demon_anagram.png" alt="Illusion 3: generated image, upright view (angel)" loading="lazy">
+    <figcaption>Illusion 3: generated image, upright view (angel)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj3/part_a/part_3/chinese_european_village_anagram.png" alt="Illusion 4: generated image, upright view (ancient Chinese village)" loading="lazy">
+    <figcaption>Illusion 4: generated image, upright view (ancient Chinese village)</figcaption>
+  </figure>
+</div>
+
+The old man/campfire and angel/demon pairs work best because their shapes map well after rotation. The village/horse and Chinese/European village pairs are weaker: details overlap or the scenes look too similar. Similar layouts, tones, and style words help both views remain recognizable.
 
 #### 3.4 Hybrid Images
 
-Here I adapt Factorized Diffusion to make hybrid images like those of Project 2: a picture that looks like one thing from far away and another thing up close. I predict two guided velocities with two prompts and combine the **low frequencies** of one with the **high frequencies** of the other:
+I combine low-frequency velocity from one prompt with high-frequency velocity from another to create a close/far hybrid:
 
 $$
 v_1=v_{\mathrm{cfg}}(x_t,t,p_1),\qquad v_2=v_{\mathrm{cfg}}(x_t,t,p_2),
@@ -595,9 +605,9 @@ $$
 x_{t+h}=x_t+h\,v .
 $$
 
-$f_{\mathrm{lowpass}}$ is a Gaussian blur with kernel size $265$ and $\sigma=16$ at $512\times512$ (the kernel size is $2\cdot\mathrm{round}(16.5\cdot512/64)+1=265$). Because the blur is linear, the update splits cleanly into frequency bands: the coarse structure of $x$ follows prompt $p_1$ (what you see from far away), and the fine detail follows prompt $p_2$ (what you see up close). Prompt $p_1$ is therefore the "distant" prompt and $p_2$ the "close" prompt.
+$f_{\mathrm{lowpass}}$ is Gaussian blur with kernel size $265$ and $\sigma=16$ at $512\times512$ (formula: $2\cdot\mathrm{round}(16.5\cdot512/64)+1=265$). The coarse structure of $x$ follows $p_1$ (far view), and fine detail follows $p_2$ (close view). Thus $p_1$ is the distant prompt and $p_2$ the close prompt.
 
-Each hybrid is shown at its **full size** ($512\times512$, the close view) and again at a **reduced size** ($64\times64$, the distant view, where the high frequencies are no longer visible).
+Each hybrid is shown at $512\times512$ and reduced to $64\times64$ to reveal its low-frequency view.
 
 <table class="p3-table" style="width:auto; display:table; margin:1em auto;">
   <thead><tr><th>Hybrid</th><th>Distant (low-frequency) prompt $p_1$</th><th>Close (high-frequency) prompt $p_2$</th></tr></thead>
@@ -629,15 +639,15 @@ Each hybrid is shown at its **full size** ($512\times512$, the close view) and a
   </figure>
 </div>
 
-Hybrid 1 mostly shows its close prompt: at full size it is a dark, furry **dog** head, and at $64\times64$ what survives is a dark silhouette with pointed ears, which can be read as a cat, but the cat reading is weak because the low-frequency band of a black silhouette is just a dark blob. Hybrid 2 is a more architectural pair: the church dominates both views, and the temple is hard to see in the reduced version. I generated both with several attempts. The high-frequency prompt tends to win in practice, since line-art detail has strong contrast, so the most successful hybrids have two subjects whose **coarse silhouettes are different** but share a similar tone.
+Hybrid 1 reads as a dog at full size, but at $64\times64$ its cat silhouette is weak. Hybrid 2 reads mostly as a church; the temple is hard to see in the reduced version. High-frequency detail tends to win, so distinct coarse silhouettes with similar tones work best.
 
 ## Part B: Flow Matching from Scratch!
 
-In Part B I train my own flow matching model on MNIST. I start with a simple one-step denoiser to see why it is not enough for generation, then train a UNet that predicts the flow and generate digits by iterative denoising, first conditioned on time only and then on time and class with classifier-free guidance. All Part B models are trained on the 60,000-image MNIST **training** set only, with pixels in $[0,1]$, fresh noise sampled in every step, and seed $180$ on a Tesla T4 GPU.
+In Part B I train MNIST denoisers and flow models from scratch. I compare one-step denoising with iterative generation, using time conditioning, class conditioning, and CFG. Models use the 60,000-image MNIST training set, pixels in $[0,1]$, fresh noise, seed $180$, and a Tesla T4 GPU.
 
 ### Part 1: Training a Single-Step Denoising UNet
 
-Given a noisy image $z$ I want a denoiser $D_\theta$ that maps it to the clean image $x$, trained with an L2 loss:
+I train a UNet denoiser $D_\theta$ to map noisy image $z$ to clean image $x$ using L2 loss:
 
 $$
 L=\mathbb{E}_{z,x}\left\|D_\theta(z)-x\right\|^2 .\tag{B.1}
@@ -645,7 +655,7 @@ $$
 
 #### 1.1 Implementing the UNet
 
-The denoiser is a UNet with two downsampling blocks, a bottleneck, two upsampling blocks, and skip connections (concatenations along the channel axis). The simple operations are built from standard layers, where `BN` is `nn.BatchNorm2d` and `GELU` is `nn.GELU`:
+The UNet has two downsampling blocks, a bottleneck, two upsampling blocks, and channel-wise skip connections. Layers use batch normalization (`BN`) and `GELU`:
 
 - **Conv**: `Conv2d(3, 1, 1)` + BN + GELU. Changes only the number of channels.
 - **DownConv**: `Conv2d(3, 2, 1)` + BN + GELU. Halves the height and width.
@@ -654,7 +664,7 @@ The denoiser is a UNet with two downsampling blocks, a bottleneck, two upsamplin
 - **Unflatten**: `ConvTranspose2d(7, 7, 0)` + BN + GELU. Turns a $1\times1$ map back into $7\times7$.
 - **ConvBlock**: Conv → Conv. **DownBlock**: DownConv → ConvBlock. **UpBlock**: UpConv → ConvBlock. These only add depth and do not change the shape.
 
-$D$ is the hidden width (a hyperparameter). With input $1\times28\times28$ the tensor shapes through the network are:
+$D$ is the hidden width. For input $1\times28\times28$, the network shapes are:
 
 <table class="p3-table" style="width:auto; display:table; margin:1em auto;">
   <thead><tr><th>Stage</th><th>Operation</th><th>Output shape</th></tr></thead>
@@ -672,13 +682,13 @@ $D$ is the hidden width (a hyperparameter). With input $1\times28\times28$ the t
 
 #### 1.2 Using the UNet to Train a Denoiser
 
-To train the denoiser I need pairs $(z,x)$ where $x$ is a clean MNIST digit. I make $z$ from $x$ with
+I create training pairs $(z,x)$, where $x$ is a clean MNIST image. I make $z$ from $x$ using:
 
 $$
 z=x+\sigma\epsilon,\qquad \epsilon\sim\mathcal{N}(0,I),\tag{B.2}
 $$
 
-with $x\in[0,1]$. The figure shows the noising process for $\sigma\in\{0.0,0.2,0.4,0.5,0.6,0.8,1.0\}$: the digits become harder to read as $\sigma$ grows, and for $\sigma=1.0$ the noise has the same standard deviation as the full pixel range, so the digit is almost invisible.
+With $x\in[0,1]$, the figure uses $\sigma\in\{0.0,0.2,0.4,0.5,0.6,0.8,1.0\}$. Increasing $\sigma$ obscures the digits; at $\sigma=1.0$, noise nearly hides them.
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -689,7 +699,7 @@ with $x\in[0,1]$. The figure shows the noising process for $\sigma\in\{0.0,0.2,0
 
 ##### 1.2.1 Training
 
-I train the denoiser to remove noise with **$\sigma=0.5$**:
+I train the denoiser with **$\sigma=0.5$**:
 
 <table class="p3-table" style="width:auto; display:table; margin:1em auto;">
   <tbody>
@@ -701,7 +711,7 @@ I train the denoiser to remove noise with **$\sigma=0.5$**:
   </tbody>
 </table>
 
-**Training loss curve.** The loss is logged at every iteration (faint line) and a 100-iteration moving average is overlaid. It drops very fast in the first ~100 iterations and then decreases slowly. The last-batch loss after each epoch is $0.0120,\ 0.0101,\ 0.0092,\ 0.0091,\ 0.0085$ for epochs $1$ to $5$.
+**Training loss curve.** Loss drops sharply in the first ~100 iterations, then more slowly. Last-batch losses for epochs $1$ to $5$ are $0.0120,\ 0.0101,\ 0.0092,\ 0.0091,\ 0.0085$.
 
 <div class="p3-grid c1 narrow">
   <figure>
@@ -710,7 +720,7 @@ I train the denoiser to remove noise with **$\sigma=0.5$**:
   </figure>
 </div>
 
-**Results on the test set** (fixed test digits and fixed noise so the two epochs are comparable). Each figure has three rows: clean digit, noisy input ($\sigma=0.5$), and denoised output.
+**Test-set results** use the same digits and noise for comparison. Rows show clean, noisy ($\sigma=0.5$), and denoised images.
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -723,11 +733,11 @@ I train the denoiser to remove noise with **$\sigma=0.5$**:
   </figure>
 </div>
 
-After one epoch the denoiser already recovers all the digits, with some residual grain and soft edges. After five epochs the strokes are smoother and the background is cleaner, which agrees with the lower loss.
+After epoch 1, digits are recognizable but grainy; by epoch 5, strokes are smoother and backgrounds cleaner.
 
 ##### 1.2.2 Out-of-Distribution Testing
 
-The denoiser only saw $\sigma=0.5$ during training. Here I keep the **same** test digits and the **same** noise direction $\epsilon$ and only change the noise level $\sigma\in\{0.0,0.2,0.4,0.5,0.6,0.8,1.0\}$ (so $z=x+\sigma\epsilon$ for a fixed $\epsilon$), and denoise with the trained model.
+The model was trained only at $\sigma=0.5$. I keep the same test digits and noise direction $\epsilon$ and vary $\sigma\in\{0.0,0.2,0.4,0.5,0.6,0.8,1.0\}$, so $z=x+\sigma\epsilon$ for fixed $\epsilon$.
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -736,11 +746,11 @@ The denoiser only saw $\sigma=0.5$ during training. Here I keep the **same** tes
   </figure>
 </div>
 
-The denoiser generalizes in one direction better than in the other. For **smaller** noise ($\sigma\le0.5$) the digits are recovered cleanly, even for $\sigma=0.2$ and $0.4$, which it never saw. For $\sigma=0.0$ (a clean input) the output is a little blurry, because the model is used to removing noise and applies the same smoothing. For **larger** noise ($\sigma=0.6$ and above) it degrades: at $\sigma=0.6$ the digit is thinner and broken, and at $\sigma=0.8$ and $1.0$ the network produces stroke-like artifacts and partially hallucinated shapes, because the input contains far more noise than it was trained to handle and it can no longer tell which of the strokes are real.
+For $\sigma\le0.5$, the model restores digits well, even at $\sigma=0.2$ and $0.4$. Clean inputs ($\sigma=0.0$) become slightly blurry. Larger noise ($\sigma=0.6$ and above) degrades results: strokes break at $\sigma=0.6$, while $\sigma=0.8$ and $1.0$ produce artifacts.
 
 ##### 1.2.3 Denoising Pure Noise
 
-To turn denoising into a generative task, I feed **pure noise** $z=\epsilon\sim\mathcal{N}(0,I)$ and ask for a clean digit. I repeat the training from 1.2.1 (same $D=128$ UNet, Adam $10^{-4}$, batch 256, 5 epochs), but the input is now pure noise and the target is still a clean digit.
+I repeat training with pure noise $z=\epsilon\sim\mathcal{N}(0,I)$ as input and clean digits as targets, using the same $D=128$ UNet, Adam $10^{-4}$, batch 256, and 5 epochs as Section 1.2.1.
 
 <div class="p3-grid c1 narrow">
   <figure>
@@ -749,7 +759,7 @@ To turn denoising into a generative task, I feed **pure noise** $z=\epsilon\sim\
   </figure>
 </div>
 
-The loss is flat: it drops quickly during the first ~100 iterations and then stays at about $0.067$ for the rest of training (last-batch losses $0.0679,\ 0.0685,\ 0.0654,\ 0.0741,\ 0.0679$), much higher than the $0.0085$ of the $\sigma=0.5$ denoiser.
+Loss plateaus near $0.067$, above the $\sigma=0.5$ denoiser's $0.0085$. Last-batch losses are $0.0679,\ 0.0685,\ 0.0654,\ 0.0741,\ 0.0679$.
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -762,41 +772,41 @@ The loss is flat: it drops quickly during the first ~100 iterations and then sta
   </figure>
 </div>
 
-**What patterns do I observe?** Every output is **the same blurry blob**, regardless of which noise was given. It does not look like any single digit: it looks like a smeared mixture of many digits, with a bright center and a vague ring or "8/0"-like shape. After epoch 5 it is smoother than after epoch 1, but it is the same image.
+**What patterns do I observe?** Every noise input produces the same blurry, average-looking blob rather than a digit. Epoch 5 is smoother than epoch 1 but has the same shape.
 
-**Why?** The pure-noise input $z$ is independent of the digit $x$, so it carries no information about which digit to draw. With an MSE loss the best the network can do for any input is to output the point that minimizes the total squared distance to all training images. For a fixed input $z$ that is
+**Why?** The pure-noise input $z$ is independent of digit $x$, so it gives no class information. Under MSE, the best fixed prediction minimizes squared distance to the training images. For any fixed input $z$, it is:
 
 $$
 D^*(z)=\arg\min_f\ \mathbb{E}_x\|f-x\|^2=\mathbb{E}[x\mid z]=\mathbb{E}[x]=\bar{x}.
 $$
 
-So the optimal output is the **mean (centroid) of the training set**: the pixel-wise average of all digits $0$–$9$. That image is bright where many digits have ink (the center), faint at the edges, and has no sharp strokes, because the strokes of different digits cancel each other out. The flat loss curve fits this too: the loss plateaus at the error of always predicting the mean, $\mathbb{E}\|x-\bar{x}\|^2$ per pixel, which cannot be reduced without knowing the digit. A single-step denoiser therefore cannot generate: when the input has no information, it just regresses to the average. The fix is to do it gradually, so that every step starts from an input that carries a bit more information about the digit, which is exactly what flow matching does in Part 2.
+The output is the training-set mean (centroid) of digits $0$–$9$, bright where strokes overlap and blurry where they cancel. The loss plateaus at $\mathbb{E}\|x-\bar{x}\|^2$ per pixel. With no digit information, one-step denoising returns an average; flow matching adds information over many steps.
 
 ### Part 2: Training a Flow Matching Model
 
-One-step denoising does not work for generation, so I **denoise iteratively** with flow matching. I sample pure noise $x_0\sim\mathcal{N}(0,I)$ and want to generate a realistic image $x_1$. For a clean training image $x_1$ the noisy sample at time $t$ is the linear interpolation
+One-step denoising fails at generation, so I use flow matching: sample noise $x_0\sim\mathcal{N}(0,I)$ and interpolate toward a clean training image $x_1$. For clean image $x_1$, the sample at time $t$ is:
 
 $$
 x_t=(1-t)\,x_0+t\,x_1,\qquad x_0\sim\mathcal{N}(0,I),\quad t\in[0,1].\tag{B.3}
 $$
 
-For small $t$ we are close to noise and for large $t$ close to the data. The **flow** (velocity) of this path is how the position changes with time:
+Small $t$ is close to noise; large $t$ approaches the data. The path's **flow** (velocity) is:
 
 $$
 u(x_t,t)=\frac{d}{dt}x_t=x_1-x_0.\tag{B.4}
 $$
 
-The UNet $u_\theta(x_t,t)$ is trained to approximate it, with the objective
+The UNet $u_\theta(x_t,t)$ learns this velocity by minimizing:
 
 $$
 L=\mathbb{E}_{x_0\sim p_0,\ x_1\sim p_1,\ t\sim U[0,1]}\left\|(x_1-x_0)-u_\theta(x_t,t)\right\|^2.\tag{B.5}
 $$
 
-Note that although the network *looks* like it maps a noisy image to a clean image, it is **not** predicting the clean image: it predicts the flow $x_1-x_0$, which contains both the image content and the noise to remove. A given $x_t$ can come from many pairs $(x_0,x_1)$, so the minimizer of (B.5) is the conditional mean $\mathbb{E}[x_1-x_0\mid x_t,t]$, the average flow through $(x_t,t)$; integrating this field from noise gives samples.
+The network predicts flow $x_1-x_0$, not the clean image. Since many $(x_0,x_1)$ pairs can produce the same $(x_t,t)$, it learns the conditional mean $\mathbb{E}[x_1-x_0\mid x_t,t]$; integrating this field generates samples.
 
 #### 2.1 Adding Time Conditioning to UNet
 
-The network needs to know $t$, because the same $x_t$ requires a different velocity at different times. I inject the scalar $t$ with a fully connected block, **FCBlock**: `Linear(F_in, F_out)` → `GELU` → `Linear(F_out, F_out)`. Because $t$ is a scalar, $F_{in}=1$, and I always normalize $t$ into $[0,1]$ before embedding it.
+The model needs to know $t$ because the same $x_t$ requires a different velocity at different times. I inject the scalar $t$ with FCBlock: `Linear(F_in, F_out)` → `GELU` → `Linear(F_out, F_out)`. Since $t$ is scalar, $F_{in}=1$; I normalize $t$ to $[0,1]$ before embedding.
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -812,15 +822,17 @@ The network needs to know $t$, because the same $x_t$ requires a different veloc
   </figure>
 </div>
 
-The embeddings **modulate** the decoder features by channel-wise multiplication. With $t_1=\mathrm{FCBlock}_1(t)\in\mathbb{R}^{2D}$ and $t_2=\mathrm{FCBlock}_2(t)\in\mathbb{R}^{D}$ (each reshaped to $2D\times1\times1$ and $D\times1\times1$ so they broadcast over the spatial dimensions):
+I modulate decoder features by channel-wise multiplication. Here $t_1=\mathrm{FCBlock}_1(t)\in\mathbb{R}^{2D}$ and $t_2=\mathrm{FCBlock}_2(t)\in\mathbb{R}^{D}$, reshaped to $2D\times1\times1$ and $D\times1\times1$ so each channel's scalar is broadcast over all spatial positions. Writing $k$ for the channel index and $(h,w)$ for the spatial position:
 
 $$
-\text{unflatten}'=\text{unflatten}\odot t_1,\qquad \text{up1}'=\text{up1}\odot t_2 .
+\text{unflatten}'_{k,h,w}=t_{1,k}\,\text{unflatten}_{k,h,w},\qquad \text{up1}'_{k,h,w}=t_{2,k}\,\text{up1}_{k,h,w},
 $$
+
+or in short, $\text{unflatten}'=\text{unflatten}\odot t_1$ and $\text{up1}'=\text{up1}\odot t_2$, where $\odot$ is the element-wise (Hadamard) product after broadcasting. The primes only mean "the modulated version of" the original tensor.
 
 #### 2.2 Training the UNet
 
-Training the time-conditioned UNet $u_\theta(x_t,t)$ is Algorithm B.1: pick a clean image $x_1$ from the training set, a random $t\sim U[0,1]$ and noise $x_0\sim\mathcal{N}(0,I)$, build $x_t$ with (B.3), and take a gradient step on the squared error between the predicted flow and $x_1-x_0$. In my implementation every sample in a batch gets its own $t$ and its own $x_0$.
+Algorithm B.1 trains time-conditioned UNet $u_\theta(x_t,t)$ to predict flow $x_1-x_0$. It samples clean image $x_1$, time $t\sim U[0,1]$, and noise $x_0\sim\mathcal{N}(0,I)$, builds $x_t$ using (B.3), and minimizes flow error. Each batch sample gets its own $t$ and $x_0$.
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -847,11 +859,11 @@ Training the time-conditioned UNet $u_\theta(x_t,t)$ is Algorithm B.1: pick a cl
   </figure>
 </div>
 
-The loss starts very high (above $2$ in the first few iterations at learning rate $10^{-2}$) and falls to about $0.09$–$0.10$ (last-batch losses $0.1445$ after epoch 1, $0.0944$ after epoch 5, and $0.0961$ after epoch 10). It does not go to zero, which is expected: for a given $x_t$ the target $x_1-x_0$ is not unique (many pairs lead to the same $x_t$), and the network can only learn the average.
+At learning rate $10^{-2}$, loss falls from above $2$ to about $0.09$–$0.10$. Last-batch losses are $0.1445$, $0.0944$, and $0.0961$ after epochs 1, 5, and 10. It stays nonzero because the target flow $x_1-x_0$ is ambiguous for a fixed $x_t$, so the model learns an average flow for $x_t$.
 
 #### 2.3 Sampling from the UNet
 
-To sample I use Algorithm B.2: start from pure noise $x_0$ and take $T=50$ Euler steps from $t=0$ to $t=1$ with step size $1/T$, evaluating the network at the current $x_t$ and $t$ in every step:
+Algorithm B.2 starts from noise $x_0$ and takes $T=50$ Euler steps of size $1/T$ from $t=0$ to $t=1$, evaluating the network at each $x_t$ and $t$:
 
 $$
 x_{t+1/T}=x_t+\frac{1}{T}\,u_\theta(x_t,t),\qquad t=0,\tfrac{1}{T},\dots,\tfrac{T-1}{T}.
@@ -864,30 +876,40 @@ $$
   </figure>
 </div>
 
-I saved checkpoints after epochs $1$, $5$, and $10$ and sample $40$ digits from each with the **same** seed (so the same $40$ starting noises are used and the grids are comparable).
+I sample $40$ digits from checkpoints at epochs $1$, $5$, and $10$, reusing the same $40$ starting noises for comparison.
 
-<div class="p3-grid c1">
+<div class="p3-grid c1 medium">
   <figure>
-    <img src="/images/cs180/proj3/part_b/part_2_3.png" alt="Time-conditioned flow matching samples after epochs 1, 5, and 10" loading="lazy">
-    <figcaption>Time-conditioned flow matching: 40 samples each from the epoch 1, epoch 5, and epoch 10 checkpoints (same 40 starting noises)</figcaption>
+    <img src="/images/cs180/proj3/part_b/part_2_3_epoch_1.png" alt="Time-conditioned flow matching, samples after epoch 1" loading="lazy">
+    <figcaption>Time-conditioned flow matching: 40 samples after epoch 1</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj3/part_b/part_2_3_epoch_5.png" alt="Time-conditioned flow matching, samples after epoch 5" loading="lazy">
+    <figcaption>Time-conditioned flow matching: 40 samples after epoch 5</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj3/part_b/part_2_3_epoch_10.png" alt="Time-conditioned flow matching, samples after epoch 10" loading="lazy">
+    <figcaption>Time-conditioned flow matching: 40 samples after epoch 10</figcaption>
   </figure>
 </div>
 
-After **epoch 1** the samples are mostly broken or fragmented strokes with a lot of noisy gray in the background, and only a few look like digits. After **epoch 5** most of the samples are recognizable digits with clean backgrounds, although many of them are distorted. After **epoch 10** the strokes are cleaner and more consistent and several digits are quite legible, but some samples are still malformed (broken loops, merged strokes, or shapes between two digits). This is the limitation of a model that is conditioned on time only: it has no way to say *which* digit to draw, so when the trajectory starts in between two digit modes it can end on a blend of them.
+Epoch 1 outputs are mostly fragmented strokes; epoch 5 is more recognizable but still distorted. Epoch 10 improves quality, but some digits remain malformed. Time-only conditioning cannot specify which digit to draw, so samples can mix classes.
 
 #### 2.4 Adding Class-Conditioning to UNet
 
-To get better results and control over which digit is generated, I also condition on the digit class $c\in\{0,\dots,9\}$. I use a **one-hot** vector for $c$ and add two more FCBlocks (with $F_{in}=10$), $c_1=\mathrm{FCBlock}_1(c)\in\mathbb{R}^{2D}$ and $c_2=\mathrm{FCBlock}_2(c)\in\mathbb{R}^{D}$. Class and time embeddings together modulate the features:
+I add the digit class $c$, with $c\in\{0,\dots,9\}$, as a one-hot vector and use two FCBlocks: $F_{in}=10$, $c_1=\mathrm{FCBlock}_1(c)\in\mathbb{R}^{2D}$, and $c_2=\mathrm{FCBlock}_2(c)\in\mathbb{R}^{D}$. Class and time embeddings both modulate the features: the class embedding scales each channel and the time embedding shifts it (both broadcast over $h,w$):
 
 $$
-\text{unflatten}'=c_1\odot\text{unflatten}+t_1,\qquad \text{up1}'=c_2\odot\text{up1}+t_2 .
+\text{unflatten}'_{k,h,w}=c_{1,k}\,\text{unflatten}_{k,h,w}+t_{1,k},\qquad \text{up1}'_{k,h,w}=c_{2,k}\,\text{up1}_{k,h,w}+t_{2,k},
 $$
 
-I also want the network to work **without** a class, so that I can use classifier-free guidance later. During training, with probability $p_{\text{uncond}}=0.1$ the conditioning vector is dropped by setting $c$ to the **zero vector** (decided independently for every sample in the batch, using a mask in the forward pass).
+i.e. $\text{unflatten}'=c_1\odot\text{unflatten}+t_1$ and $\text{up1}'=c_2\odot\text{up1}+t_2$.
+
+For CFG, I drop class $c$ to the zero vector with probability $p_{\text{uncond}}=0.1$, independently for each sample.
 
 #### 2.5 Training the UNet
 
-Training is the same as the time-only version (Algorithm B.3), with two differences: the label $c$ is used as a one-hot condition, and with probability $p_{\text{uncond}}=0.1$ it is replaced by the zero vector, so the same network learns both a conditional flow $u_\theta(x_t,t,c)$ and an unconditional one $u_\theta(x_t,t,0)$.
+Algorithm B.3 uses one-hot class $c$ and replaces it with zero with probability $p_{\text{uncond}}=0.1$. The network learns conditional $u_\theta(x_t,t,c)$ and unconditional $u_\theta(x_t,t,0)$ flows.
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -896,7 +918,7 @@ Training is the same as the time-only version (Algorithm B.3), with two differen
   </figure>
 </div>
 
-The hyperparameters are the same as for the time-only model (Section 2.2): $D=64$, batch size $64$, Adam with initial learning rate $10^{-2}$, `ExponentialLR` with $\gamma=0.1^{1/10}$ stepped once per epoch, $10$ epochs, $p_{\text{uncond}}=0.1$. Checkpoints are saved after epochs $1$, $5$, and $10$.
+I use $D=64$, batch size $64$, Adam at $10^{-2}$, `ExponentialLR` with $\gamma=0.1^{1/10}$, $10$ epochs, and $p_{\text{uncond}}=0.1$. Checkpoints are saved at epochs $1$, $5$, and $10$.
 
 <div class="p3-grid c1 narrow">
   <figure>
@@ -905,11 +927,11 @@ The hyperparameters are the same as for the time-only model (Section 2.2): $D=64
   </figure>
 </div>
 
-The loss has a large spike at the very beginning of training (the first iterations are around $12$ at learning rate $10^{-2}$) and then drops quickly to about $0.1$ (last-batch losses $0.1227$ after epoch 1, $0.0822$ after epoch 5, $0.1030$ after epoch 10; a single batch of 64 is noisy, so these numbers fluctuate). The curve is flat by eye after the first epoch, because most of the remaining improvement is in the sample quality (see 2.6), not in the average MSE.
+Loss drops from an initial spike near $12$ at learning rate $10^{-2}$ to about $0.1$. Last-batch losses are $0.1227$, $0.0822$, and $0.1030$ at epochs 1, 5, and 10. These single-batch values fluctuate; sample quality improves even when loss looks flat.
 
 #### 2.6 Sampling from the UNet
 
-Sampling with the class-conditioned UNet is Algorithm B.4. At every one of the $T=300$ Euler steps I compute **both** the unconditional flow (class dropped) and the conditional flow (class $c$) at the same $(x_t,t)$ and combine them with classifier-free guidance of scale $\gamma=5.0$:
+At each of $T=300$ Euler steps, I evaluate unconditional and class-$c$ flows at the same $(x_t,t)$ and apply CFG with $\gamma=5.0$:
 
 $$
 u=u_{\mathrm{uncond}}+\gamma\,(u_{\mathrm{cond}}-u_{\mathrm{uncond}}),\qquad x_{t+1/T}=x_t+\frac{1}{T}\,u .
@@ -924,11 +946,11 @@ $$
 
 <div class="p3-note" markdown="1">
 
-**Note: two CFG conventions.** Part A wrote guidance as $v_c+w(v_c-v_u)$ and Part B writes it as $u_u+\gamma(u_c-u_u)$. They are the same thing with $\gamma=1+w$, since $v_c+w(v_c-v_u)=v_u+(1+w)(v_c-v_u)$. So $\gamma=5$ here is the same as $w=4$ in the Part A convention, and $\gamma=1$ is plain conditional sampling.
+**Note: two CFG conventions.** Part A uses $v_c+w(v_c-v_u)$; Part B uses $u_u+\gamma(u_c-u_u)$. They match when $\gamma=1+w$ because $v_c+w(v_c-v_u)=v_u+(1+w)(v_c-v_u)$. Thus $\gamma=5$ equals $w=4$, and $\gamma=1$ is conditional sampling.
 
 </div>
 
-I generate **4 instances of each digit** (a $4\times10$ grid; every row is $0,1,\dots,9$) with $300$ Euler steps, $\gamma=5$, and the same seed at each checkpoint, for epochs $1$, $5$, and $10$.
+I generate 4 samples per digit ($4\times10$ grid, with each row $0,1,\dots,9$) using $300$ Euler steps, $\gamma=5$, and the same seed at epochs $1$, $5$, and $10$.
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -945,11 +967,11 @@ I generate **4 instances of each digit** (a $4\times10$ grid; every row is $0,1,
   </figure>
 </div>
 
-Class conditioning with guidance is a big improvement over the time-only model. After a **single epoch** every column already shows the requested digit, although a few are sloppy (some $4$s, $5$s, $6$s, and $9$s are distorted or have extra strokes). After **epoch 5** all 40 images are clean, legible digits of the right class, and after **epoch 10** the strokes are smooth and consistent, with natural variation in style (slant, thickness, and shape of the $1$s, $2$s, $4$s, and $7$s) inside each column. The class tells the network which mode to go to, so trajectories no longer end between two digits, and the guidance extrapolates away from the unconditional flow toward the class-specific one, which sharpens the strokes. This is why the class-conditioned model needs only 10 epochs to be much better than the time-only model after 10 epochs.
+Class conditioning greatly improves samples. After epoch 1, each column shows the requested digit, though some $4$s, $5$s, $6$s, and $9$s are distorted. By epoch 5 all 40 are legible; by epoch 10 the strokes are smoother, with natural variation in the $1$s, $2$s, $4$s, and $7$s. Class labels resolve ambiguity, and CFG sharpens the class-specific samples.
 
 ##### Removing the learning-rate scheduler
 
-**Can I get rid of the exponential learning-rate scheduler and keep the same quality?** The scheduler multiplies the learning rate by $\gamma=0.1^{1/10}\approx0.79$ after every epoch, from $10^{-2}$ down to $10^{-3}$, so it gives large, fast steps at the start (when the model is far from good) and small, precise ones at the end. A constant learning rate has to be a compromise. I replaced it with a **constant learning rate of $3\times10^{-3}$** and left everything else the same (batch size $64$, $D=64$, $10$ epochs, $p_{\text{uncond}}=0.1$, $T=300$, $\gamma=5$, same sampling seed). I chose it as roughly the geometric mean of the scheduler's learning rates, $10^{-2}\cdot0.1^{1/2}\approx3.2\times10^{-3}$: it is smaller than $10^{-2}$ (which causes the large loss spike at the start of the scheduled run) but still large enough for the model to keep learning at the same pace for all 10 epochs. I used this one setting and did not tune it further.
+**Can I get rid of the exponential learning-rate scheduler and keep the same quality?** The scheduler decays the learning rate by $\gamma=0.1^{1/10}\approx0.79$ each epoch, from $10^{-2}$ to $10^{-3}$. I replace it with a constant $3\times10^{-3}$ and keep the other settings (batch size $64$, $D=64$, $10$ epochs, $p_{\text{uncond}}=0.1$, $T=300$, $\gamma=5$, same seed). This is near the geometric mean, $10^{-2}\cdot0.1^{1/2}\approx3.2\times10^{-3}$ and below $10^{-2}$. I do not tune it further.
 
 <div class="p3-grid c1 narrow">
   <figure>
@@ -958,7 +980,7 @@ Class conditioning with guidance is a big improvement over the time-only model. 
   </figure>
 </div>
 
-Samples from the model trained without the scheduler, with the same sampling procedure (4 per digit, $T=300$, $\gamma=5$):
+I sample the model without the scheduler using the same setup: 4 per digit, $T=300$, $\gamma=5$.
 
 <div class="p3-grid c1 medium">
   <figure>
@@ -984,10 +1006,10 @@ Samples from the model trained without the scheduler, with the same sampling pro
   </tbody>
 </table>
 
-The final result is the same: after epoch 10 the digits without the scheduler are as clean and legible as the scheduled model, and the loss curve is just as flat. The differences are in the earlier epochs: with a constant learning rate the model is already decent after one epoch (thin, slightly ragged strokes), and after epoch 5 a faint gray speckle is still visible in the background of the images, because the learning rate never becomes small enough to settle the weights, while with the scheduler the background is already clean at epoch 5. So a well-chosen constant learning rate matches the final quality of the scheduler, at the price of slightly noisier intermediate checkpoints. (The last-batch losses in the table are single-batch values and only indicative.)
+By epoch 10, the constant-learning-rate model matches the scheduled model's sample quality. Epoch 5 has faint background speckle, while the scheduled model is cleaner; the table's last-batch losses are only indicative.
 
 ## Things I learned
 
-The idea that stayed with me from Part B is the *centroid* argument. A one-step denoiser trained on pure noise has to output the mean of the training set, because under MSE the best answer for an uninformative input is the average, and seeing that blob after training makes it clear why generation has to be done iteratively. Flow matching works because every intermediate $x_t$ already contains a little information about the final digit, and each Euler step only needs to use that information to take a small step. The time-only model shows what is still missing (it does not know which digit to commit to), and class conditioning with classifier-free guidance fixes this, which I could literally see in the grids.
+The main lesson from Part B is the centroid argument: a denoiser trained on pure noise predicts the training-set mean, not a digit. Flow matching works iteratively because each $x_t$ gives the next step some information. Time-only conditioning leaves the digit ambiguous; class conditioning and CFG resolve it.
 
-Part A showed me the same ideas at a much bigger scale. The starting time $t_0$ in image editing is a dial between *"trust the pixels"* and *"trust the model"*, and the interesting range (for me around $t_0=0.10$–$0.14$) is where the model keeps the composition and color layout of my drawing but re-renders the surfaces as a photograph. Classifier-free guidance is simply extrapolation along $v_c-v_u$, and the visual anagrams and hybrid images are just different ways of combining two guided velocities (averaging them in two different orientations, or splitting them by frequency band), so the connection to the frequency-domain ideas from Project 2 came back in the hybrids: the low-pass and high-pass split of the velocity decides which prompt you see from far away and which one up close.
+Part A showed the same idea at image scale. In editing, $t_0$ balances preserving pixels with trusting the model; around $t_0=0.10$–$0.14$, my drawings kept their composition but became photo-like. CFG extrapolates along $v_c-v_u$, while anagrams combine rotated predictions and hybrids split low/high frequencies, connecting back to Project 2.
