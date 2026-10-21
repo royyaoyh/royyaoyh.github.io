@@ -436,7 +436,7 @@ For `yopo`, $t_0=0.02$ produces a man's face; $t_0=0.04$ and $0.06$ retain only 
 
 This sweep shows how editing pushes non-realistic inputs toward natural-looking images. I test one web image and two hand drawings.
 
-**Web image: Moon Lord from Terraria.** The input is flat game art, so it starts far from the natural-image manifold. At $t_0=0.02$ the original is gone and the model gives an unrelated photo; at $t_0=0.04$ and $0.06$, only the color palette and rough layout remain. At $t_0=0.10$ and $0.14$, the creature's shapes are re-rendered with photographic texture and lighting while the overall composition is kept. For $t_0\ge0.25$, the flat game art returns with only subtle texture changes.
+**Web image: Moon Lord from Terraria.** The input is flat pixel art, so it starts far from the natural-image manifold. At $t_0=0.02$ the original is gone and the model gives an unrelated photo of a man with headphones at a desk. At $t_0=0.04$ and $0.06$ only the pose and the palette survive: the raised arms and open hands become a real man in a tan T-shirt, and the teal head becomes a glossy blue or teal helmet. At $t_0=0.10$ and $0.14$ the model keeps the symmetric layout and the teal glow but renders everything as glass, metal, and skin. The head turns into a translucent capsule with glowing teal orbs where the eyes were, the ribcage turns into metal rings, and the wrists get bracelets. At $t_0=0.25$ the Moon Lord returns with its tentacle face, brain, and palm eyes, but with smooth shading and realistic muscles instead of pixels. By $t_0=0.50$ it is almost the original pixel art, with only slightly softer outlines.
 
 <div class="p3-grid c1 ">
   <figure>
