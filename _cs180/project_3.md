@@ -599,34 +599,58 @@ Each hybrid is shown at $512\times512$ and reduced to $64\times64$ to reveal its
 <table class="p3-table" style="width:auto; display:table; margin:1em auto;">
   <thead><tr><th>Hybrid</th><th>Distant (low-frequency) prompt $p_1$</th><th>Close (high-frequency) prompt $p_2$</th></tr></thead>
   <tbody>
-    <tr><td>1</td><td>a lithography of a cat</td><td>a lithography of a dog</td></tr>
-    <tr><td>2</td><td>a lithography of a temple</td><td>a lithography of a church</td></tr>
+    <tr><td>1</td><td style="white-space:normal; text-align:left;">an oil painting of a glowing crystal ball, a round transparent glass sphere with swirling light inside</td><td style="white-space:normal; text-align:left;">an oil painting of a girl in an elaborate, whimsical fantasy costume buying goods at a market stall in a medieval European-style town, magical fantasy world, cobblestone street, half-timbered houses, warm lantern light</td></tr>
+    <tr><td>2</td><td style="white-space:normal; text-align:left;">an oil painting of a modern intact metropolis, a tall glass skyscraper in the center of a city skyline, sleek towers, clear sky, muted dusty colors</td><td style="white-space:normal; text-align:left;">an oil painting of a pair of twins living inside a crumbling skyscraper in a ruined post-apocalyptic city, overgrown with moss, dusty muted colors, broken windows</td></tr>
+    <tr><td>3</td><td>a lithography of a cat</td><td>a lithography of a dog</td></tr>
+    <tr><td>4</td><td>a lithography of a temple</td><td>a lithography of a church</td></tr>
   </tbody>
 </table>
 
 <div class="p3-grid c2 medium" style="align-items:flex-end;">
   <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/cat_dog_hybrid_0.png" alt="Hybrid 1 full size" loading="lazy">
-    <figcaption>Hybrid 1, close view (full size): "a lithography of a dog"</figcaption>
+    <img src="/images/cs180/proj3/part_a/part_3/fantasy_world_crystal_ball_hybrid.png" alt="Hybrid 1 full size" loading="lazy">
+    <figcaption>Hybrid 1, close view (full size): "an oil painting of a girl in a fantasy costume buying goods at a market stall"</figcaption>
   </figure>
   <figure style="flex: 0 0 auto;">
-    <img src="/images/cs180/proj3/part_a/part_3/cat_dog_hybrid_0.png" alt="Hybrid 1 reduced to 64 by 64" style="width:64px; min-width:64px; image-rendering:auto;" loading="lazy">
-    <figcaption>Hybrid 1, distant view ($64\times64$): "a lithography of a cat"</figcaption>
+    <img src="/images/cs180/proj3/part_a/part_3/fantasy_world_crystal_ball_hybrid.png" alt="Hybrid 1 reduced to 64 by 64" style="width:64px; min-width:64px; image-rendering:auto;" loading="lazy">
+    <figcaption>Hybrid 1, distant view ($64\times64$): "an oil painting of a glowing crystal ball"</figcaption>
   </figure>
 </div>
 
 <div class="p3-grid c2 medium" style="align-items:flex-end;">
   <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/church_temple_hybrid_0.png" alt="Hybrid 2 full size" loading="lazy">
-    <figcaption>Hybrid 2, close view (full size): "a lithography of a church"</figcaption>
+    <img src="/images/cs180/proj3/part_a/part_3/post_apocalyptic_city_jungle_hybrid.png" alt="Hybrid 2 full size" loading="lazy">
+    <figcaption>Hybrid 2, close view (full size): "an oil painting of twins living inside a crumbling skyscraper in a ruined post-apocalyptic city"</figcaption>
   </figure>
   <figure style="flex: 0 0 auto;">
-    <img src="/images/cs180/proj3/part_a/part_3/church_temple_hybrid_0.png" alt="Hybrid 2 reduced to 64 by 64" style="width:64px; min-width:64px; image-rendering:auto;" loading="lazy">
-    <figcaption>Hybrid 2, distant view ($64\times64$): "a lithography of a temple"</figcaption>
+    <img src="/images/cs180/proj3/part_a/part_3/post_apocalyptic_city_jungle_hybrid.png" alt="Hybrid 2 reduced to 64 by 64" style="width:64px; min-width:64px; image-rendering:auto;" loading="lazy">
+    <figcaption>Hybrid 2, distant view ($64\times64$): "an oil painting of a modern intact metropolis, a tall glass skyscraper"</figcaption>
   </figure>
 </div>
 
-Hybrid 1 reads as a dog at full size, but at $64\times64$ its cat silhouette is weak. Hybrid 2 reads mostly as a church; the temple is hard to see in the reduced version. High-frequency detail tends to win, so distinct coarse silhouettes with similar tones work best.
+<div class="p3-grid c2 medium" style="align-items:flex-end;">
+  <figure>
+    <img src="/images/cs180/proj3/part_a/part_3/cat_dog_hybrid_0.png" alt="Hybrid 3 full size" loading="lazy">
+    <figcaption>Hybrid 3, close view (full size): "a lithography of a dog"</figcaption>
+  </figure>
+  <figure style="flex: 0 0 auto;">
+    <img src="/images/cs180/proj3/part_a/part_3/cat_dog_hybrid_0.png" alt="Hybrid 3 reduced to 64 by 64" style="width:64px; min-width:64px; image-rendering:auto;" loading="lazy">
+    <figcaption>Hybrid 3, distant view ($64\times64$): "a lithography of a cat"</figcaption>
+  </figure>
+</div>
+
+<div class="p3-grid c2 medium" style="align-items:flex-end;">
+  <figure>
+    <img src="/images/cs180/proj3/part_a/part_3/church_temple_hybrid_0.png" alt="Hybrid 4 full size" loading="lazy">
+    <figcaption>Hybrid 4, close view (full size): "a lithography of a church"</figcaption>
+  </figure>
+  <figure style="flex: 0 0 auto;">
+    <img src="/images/cs180/proj3/part_a/part_3/church_temple_hybrid_0.png" alt="Hybrid 4 reduced to 64 by 64" style="width:64px; min-width:64px; image-rendering:auto;" loading="lazy">
+    <figcaption>Hybrid 4, distant view ($64\times64$): "a lithography of a temple"</figcaption>
+  </figure>
+</div>
+
+Hybrid 1 reads as a market scene with two cloaked figures at a stall at full size, while at $64\times64$ the large glowing circle of the crystal ball takes over. Hybrid 2 reads as children sitting in mossy ruins up close, and in the reduced version the tall skyscraper in the green haze stands out. Hybrid 3 reads as a dog at full size, but at $64\times64$ its cat silhouette is weak. Hybrid 4 reads mostly as a church; the temple is hard to see in the reduced version. High-frequency detail tends to win, so distinct coarse silhouettes with similar tones work best.
 
 ## Part B: Flow Matching from Scratch!
 
