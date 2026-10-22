@@ -612,7 +612,7 @@ Each hybrid is shown at $512\times512$ and reduced to $64\times64$ to reveal its
     <figcaption>Hybrid 1, close view (full size): "an oil painting of a girl in a fantasy costume buying goods at a market stall"</figcaption>
   </figure>
   <figure style="flex: 0 0 auto;">
-    <img src="/images/cs180/proj3/part_a/part_3/fantasy_world_crystal_ball_hybrid.png" alt="Hybrid 1 reduced to 64 by 64" style="width:64px; min-width:64px; image-rendering:auto;" loading="lazy">
+    <img src="/images/cs180/proj3/part_a/part_3/fantasy_world_crystal_ball_hybrid.png" alt="Hybrid 1 reduced to 64 by 64" style="width:64px; min-width:64px; margin:0 auto; image-rendering:auto;" loading="lazy">
     <figcaption>Hybrid 1, distant view ($64\times64$): "an oil painting of a glowing crystal ball"</figcaption>
   </figure>
 </div>
@@ -623,7 +623,7 @@ Each hybrid is shown at $512\times512$ and reduced to $64\times64$ to reveal its
     <figcaption>Hybrid 2, close view (full size): "an oil painting of twins living inside a crumbling skyscraper in a ruined post-apocalyptic city"</figcaption>
   </figure>
   <figure style="flex: 0 0 auto;">
-    <img src="/images/cs180/proj3/part_a/part_3/post_apocalyptic_city_jungle_hybrid.png" alt="Hybrid 2 reduced to 64 by 64" style="width:64px; min-width:64px; image-rendering:auto;" loading="lazy">
+    <img src="/images/cs180/proj3/part_a/part_3/post_apocalyptic_city_jungle_hybrid.png" alt="Hybrid 2 reduced to 64 by 64" style="width:64px; min-width:64px; margin:0 auto; image-rendering:auto;" loading="lazy">
     <figcaption>Hybrid 2, distant view ($64\times64$): "an oil painting of a modern intact metropolis, a tall glass skyscraper"</figcaption>
   </figure>
 </div>
@@ -634,7 +634,7 @@ Each hybrid is shown at $512\times512$ and reduced to $64\times64$ to reveal its
     <figcaption>Hybrid 3, close view (full size): "a lithography of a dog"</figcaption>
   </figure>
   <figure style="flex: 0 0 auto;">
-    <img src="/images/cs180/proj3/part_a/part_3/cat_dog_hybrid_0.png" alt="Hybrid 3 reduced to 64 by 64" style="width:64px; min-width:64px; image-rendering:auto;" loading="lazy">
+    <img src="/images/cs180/proj3/part_a/part_3/cat_dog_hybrid_0.png" alt="Hybrid 3 reduced to 64 by 64" style="width:64px; min-width:64px; margin:0 auto; image-rendering:auto;" loading="lazy">
     <figcaption>Hybrid 3, distant view ($64\times64$): "a lithography of a cat"</figcaption>
   </figure>
 </div>
@@ -645,7 +645,7 @@ Each hybrid is shown at $512\times512$ and reduced to $64\times64$ to reveal its
     <figcaption>Hybrid 4, close view (full size): "a lithography of a church"</figcaption>
   </figure>
   <figure style="flex: 0 0 auto;">
-    <img src="/images/cs180/proj3/part_a/part_3/church_temple_hybrid_0.png" alt="Hybrid 4 reduced to 64 by 64" style="width:64px; min-width:64px; image-rendering:auto;" loading="lazy">
+    <img src="/images/cs180/proj3/part_a/part_3/church_temple_hybrid_0.png" alt="Hybrid 4 reduced to 64 by 64" style="width:64px; min-width:64px; margin:0 auto; image-rendering:auto;" loading="lazy">
     <figcaption>Hybrid 4, distant view ($64\times64$): "a lithography of a temple"</figcaption>
   </figure>
 </div>
