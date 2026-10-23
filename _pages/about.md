@@ -1,41 +1,52 @@
 ---
 permalink: /
 author_profile: true
-redirect_from: 
+redirect_from:
   - /about/
   - /about.html
 ---
 
-Hello, my name is Roy Yao. I am an undergraduate student currently studying Bioengineering and EECS at UC Berkeley. My interests lie in imaging and devices. I have experience in signal processing, machine learning, and hardware.
+I'm Roy Yao, a senior at UC Berkeley pursuing a B.S. in Electrical Engineering & Computer Science and Bioengineering (May 2027). I'm interested in medical imaging, biomedical devices, and neurotechnology—especially projects that combine hardware, signal processing, and machine learning. [Email](mailto:roy_h@berkeley.edu) · [LinkedIn](https://www.linkedin.com/in/27yaoroy/)
 
-I am currently part of [Conolly Lab](https://bisl.studentorg.berkeley.edu/) under [Professor Steven Conolly](https://www2.eecs.berkeley.edu/Faculty/Homepages/sconolly.html) where I work on implementing a low noise preamp for Magnetic Particle Imaging (MPI). Besides research, I am also involved with [Bioengineering Honor Society (BioEHS)](https://bioehs.studentorg.berkeley.edu/) and [Neurotech@Berkeley](https://neurotech.studentorg.berkeley.edu/).
+## Research
 
-Previously, in Summer 2026, I interned as an Imaging Scientist Intern at [Varex Imaging](https://www.vareximaging.com/) In Summer 2025, I was a summer ressearch intern at [Prof. Chih-Chen Chen](https://pme.site.nthu.edu.tw/p/406-1308-74024,r4027.php?Lang=en) Lab at [National Tsing Hua University](https://nthu-en.site.nthu.edu.tw/). I was also an undergraduate researcher at [Ganguly Lab](https://www.gangulylab.org/) at [UCSF](https://www.ucsf.edu/) and Vice President of [Bioengineering Mentorship Program](https://bioeng.berkeley.edu/undergrad/bmp)
+At Berkeley's [Conolly Lab](https://bisl.studentorg.berkeley.edu/) with [Professor Steven Conolly](https://www2.eecs.berkeley.edu/Faculty/Homepages/sconolly.html), I design and characterize a low-noise analog front end for magnetic particle imaging (MPI), from circuit simulation and PCB design to bench validation.
 
-In my free time, I love reading about history and am currently trying to pick up sketching again!
+Previously, at [Chen Lab](https://pme.site.nthu.edu.tw/p/406-1308-74024,r4027.php?Lang=en) at [National Tsing Hua University](https://nthu-en.site.nthu.edu.tw/), I built Python/OpenCV pipelines to detect nanoparticle transit events in microfluidic channels and validate video-derived counts against lock-in measurements. At [Ganguly Lab](https://www.gangulylab.org/) at [UCSF](https://www.ucsf.edu/), I applied signal processing and neural-network models to brain–computer interface signals for action classification.
 
-Projects
-------
-**[CS 180 Projects](/cs180/)**
--  Projects from [CS 180: Intro to Computer Vision and Computational Photography](https://cal-cs180.github.io/fa26/). Currently in progress. 
+I also work on multimodal silent-speech decoding through [Neurotech@Berkeley](https://neurotech.studentorg.berkeley.edu/). Earlier, I completed a team STEM research project through [UCI COSMOS](https://www.cosmos.uci.edu/).
 
-**[UC Berkeley Bioengineering Course Map](https://bioehs.studentorg.berkeley.edu/studentservices/coursemapinteractive/)**
-- Collected, summarized, and graphed all 45 undergraduate Bioengineering courses at UC Berkeley in a directed acyclic graph format, including prerequisite relationships, technical topics, concentration, workload, and tips from students. 
+## Industry Experience
 
-**[A Microfluidic Device Enabling Single-Cell Isolation Using Hydrodynamic Trapping](files/bioe121l.pdf)**
-- Designed, fabricated, and tested a passive PDMS microfluidic platform for deterministic single-particle trapping compatible with standard 96-well microtiter plates.
+At [Varex Imaging](https://www.vareximaging.com/), I developed Geant4 simulations and multi-material phantom workflows to evaluate charge-sharing correction for photon-counting CT detectors, demonstrating a 2× SNR improvement in simulation and measured data. I also co-authored a submission to [SPIE Medical Imaging 2027](https://spie.org/conferences-and-exhibitions/medical-imaging) and built tools to improve calibration and quantitative analysis.
 
-- Iterated across multiple trap geometries and channel dimensions and achieved up to 83% single-bead trapping efficiency in serial layouts and 81.25% in 9 mm-spaced layouts.
+At [Liferiver Biotech](https://www.liferiver.com.cn/) in Shanghai, I wrote PCR and RT-PCR kit manuals for global sales and learned about diagnostic workflows, technical documentation, testing standards, and regulatory processes.
 
-**[Multimodal Articulatory Inference: Radio-Visual Sensing for Silent Speech
-Recognition with RVTALL](files/ntab_poster.pdf)**
-- Researched silent speech interfaces. Built ML pipelines over 6 sensor modalities (radar, video, laser speckle, EMG, and audio) to decode speech without vocalization; achieved 71.15% test accuracy across 30 phoneme/word/sentence classes using a 1D CNN on laser speckle data — ~20× better than chance
-- Designed cross-modal data synchronization, modality-specific feature extraction (Mel-spectrograms, lip landmarks, CNN embeddings), and encoder architectures for a late-fusion multimodal decoder targeting open-vocabulary silent speech
+## Leadership & Service
 
-**[EMG-Based Word Detection Sensor](files/bioe101.pdf)**
-- Designed and prototyped a facial EMG sensor using Ag/AgCl electrodes, AD620 instrumentation amplifiers, and Arduino MKR Zero ADC for real-time speech-related signal acquisition. 
-- Implemented two-stage band-pass filtering (20–500 Hz, gain ≈ 4000) and autocorrelation-based classification augmented with cosine similarity, MSE, and CNN algorithms, achieving 99% word detection accuracy. 
+As Webmaster for the [Bioengineering Honor Society (BioEHS)](https://bioehs.studentorg.berkeley.edu/), I maintain the website and candidate portal, using Django for the backend and React/JavaScript for the frontend, and build resources for Bioengineering undergraduates.
 
-**[Computational Modeling of Lung Mucosal Immunity](files/bioe104.pdf)**
-- Built a COMSOL Multiphysics 2D axisymmetric model of the bronchiole to simulate mucosal and humoral clearance of Mycobacterium tuberculosis under oscillatory airflow. 
-- Integrated diffusion, laminar flow, and antibody-antigen neutralization kinetics to study bacterial clearance across mucus, periciliary, and epithelial layers.
+As Co-Vice President of Berkeley's [Bioengineering Mentorship Program (BMP)](https://bioeng.berkeley.edu/bmp), I help lead student mentorship, outreach, and academic and professional programming. I also volunteer with [Tzu Chi](https://www.tzuchi.us/) through Oakland street cleanups and free tutoring.
+
+## Projects
+
+**Robotics Manipulation & Mobile Navigation** *(Aug 2026–Present)*  
+Developing a ROS 2 manipulation pipeline for a UR7e arm using Intel RealSense point-cloud perception, MoveIt inverse kinematics, and trajectory planning; also implementing TurtleBot 3 LiDAR mapping and probabilistic occupancy grids.
+
+**[CS 180 Projects](/cs180/)**  
+Computer vision and computational photography projects, currently in progress. See the [course site](https://cal-cs180.github.io/fa26/).
+
+**[Multimodal Silent-Speech Decoding](files/ntab_poster.pdf)**  
+Built analysis pipelines for multimodal speech data and trained a 1D CNN on laser-speckle time series, reaching 71.15% accuracy across 30 classes.
+
+**[Microfluidic Single-Cell Dispensing Device](files/bioe121l.pdf)**  
+Designed and tested a passive hydrodynamic trapping device for 40-μm bead cell analogs in a 96-well-compatible layout; achieved 81.25% trapping in 80-μm channels at 9-mm well spacing.
+
+**[EMG-Based Word Detection Sensor](files/bioe101.pdf)**  
+Built a facial EMG acquisition system with Ag/AgCl electrodes, AD620 amplifiers, and an Arduino MKR Zero; implemented signal-similarity and CNN-based classifiers for speech-related muscle signals.
+
+**[UC Berkeley Bioengineering Course Map](https://bioehs.studentorg.berkeley.edu/studentservices/coursemapinteractive/)**  
+Created an interactive map of 45 undergraduate Bioengineering courses showing prerequisites, technical topics, concentrations, and student tips.
+
+**[Computational Modeling of Lung Mucosal Immunity](files/bioe104.pdf)**  
+Built a COMSOL model of a bronchiole that couples airflow, diffusion, and antibody–antigen kinetics to study bacterial clearance across airway layers.
