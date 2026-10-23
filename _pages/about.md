@@ -6,7 +6,7 @@ redirect_from:
   - /about.html
 ---
 
-I'm Roy Yao, a senior at UC Berkeley pursuing a B.S. in Electrical Engineering & Computer Science and Bioengineering (May 2027). I'm interested in medical imaging, biomedical devices, and neurotechnology—especially projects that combine hardware, signal processing, and machine learning. [Email](mailto:roy_h@berkeley.edu) · [LinkedIn](https://www.linkedin.com/in/27yaoroy/)
+I'm Roy Yao, a senior at UC Berkeley pursuing a B.S. in Electrical Engineering & Computer Science and Bioengineering (May 2027). I'm interested in medical imaging, biomedical devices, and neurotechnology—especially projects that combine hardware, signal processing, and machine learning.
 
 ## Research
 
@@ -14,7 +14,7 @@ At Berkeley's [Conolly Lab](https://bisl.studentorg.berkeley.edu/) with [Profess
 
 Previously, at [Chen Lab](https://pme.site.nthu.edu.tw/p/406-1308-74024,r4027.php?Lang=en) at [National Tsing Hua University](https://nthu-en.site.nthu.edu.tw/), I built Python/OpenCV pipelines to detect nanoparticle transit events in microfluidic channels and validate video-derived counts against lock-in measurements. At [Ganguly Lab](https://www.gangulylab.org/) at [UCSF](https://www.ucsf.edu/), I applied signal processing and neural-network models to brain–computer interface signals for action classification.
 
-I also work on multimodal silent-speech decoding through [Neurotech@Berkeley](https://neurotech.studentorg.berkeley.edu/). Earlier, I completed a team STEM research project through [UCI COSMOS](https://www.cosmos.uci.edu/).
+I also work on multimodal silent-speech decoding through [Neurotech@Berkeley](https://neurotech.studentorg.berkeley.edu/). 
 
 ## Industry Experience
 
