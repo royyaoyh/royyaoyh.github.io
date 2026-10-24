@@ -216,7 +216,7 @@ I reused one noise tensor $\epsilon$ (`noise(SEED)`, seed $180$) at all three ti
 <div class="p3-grid c1 medium">
   <figure>
     <img src="/images/cs180/proj3/part_a/part_1/1_1.png" alt="Original image and the noisy versions at t=0.25, t=0.50, and t=0.75" loading="lazy">
-    <figcaption>Original image (Changbai Mountain in China)and the noisy versions at $t=0.25$, $t=0.50$, and $t=0.75$</figcaption>
+    <figcaption>Original image (Changbai Mountain in China) and the noisy versions at $t=0.25$, $t=0.50$, and $t=0.75$</figcaption>
   </figure>
 </div>
 
@@ -236,8 +236,22 @@ I tested $\sigma\in\{1,2,4,8,16\}$ (kernel size $6\sigma+1$) and kept the $\sigm
 
 <div class="p3-grid c1 medium">
   <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_2.png" alt="Noisy input (left) and best Gaussian-denoised result (right) for t=0.25, t=0.50, t=0.75" loading="lazy">
-    <figcaption>Noisy input (left) and best Gaussian-denoised result (right) for $t=0.25$, $t=0.50$, $t=0.75$</figcaption>
+    <img src="/images/cs180/proj3/part_a/part_1/1_2_sigma_1.png" alt="Noisy input (left) and best Gaussian-denoised result (right) for t=0.25, t=0.50, t=0.75" loading="lazy">
+    <figcaption>Noisy input (left) and best Gaussian-denoised result (right) for $t=0.75$</figcaption>
+  </figure>
+</div>
+
+<div class="p3-grid c1 medium">
+  <figure>
+    <img src="/images/cs180/proj3/part_a/part_1/1_2_sigma_4.png" alt="Noisy input (left) and best Gaussian-denoised result (right) for t=0.25, t=0.50, t=0.75" loading="lazy">
+    <figcaption>Noisy input (left) and best Gaussian-denoised result (right) for $t=0.50$</figcaption>
+  </figure>
+</div>
+
+<div class="p3-grid c1 medium">
+  <figure>
+    <img src="/images/cs180/proj3/part_a/part_1/1_2_sigma_8.png" alt="Noisy input (left) and best Gaussian-denoised result (right) for t=0.25, t=0.50, t=0.75" loading="lazy">
+    <figcaption>Noisy input (left) and best Gaussian-denoised result (right) for $t=0.75$</figcaption>
   </figure>
 </div>
 
