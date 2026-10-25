@@ -251,7 +251,7 @@ I tested $\sigma\in\{1,2,4,8,16\}$ (kernel size $6\sigma+1$) and kept the $\sigm
 <div class="p3-grid c1 medium">
   <figure>
     <img src="/images/cs180/proj3/part_a/part_1/1_2_sigma_8.png" alt="Noisy input (left) and best Gaussian-denoised result (right) for t=0.25, t=0.50, t=0.75" loading="lazy">
-    <figcaption>Noisy input (left) and best Gaussian-denoised result (right) for $t=0.75$</figcaption>
+    <figcaption>Noisy input (left) and best Gaussian-denoised result (right) for $t=0.25$</figcaption>
   </figure>
 </div>
 
@@ -275,8 +275,22 @@ Velocity is added with $(1-t)$, not subtracted. I use the prompt `"a high qualit
 
 <div class="p3-grid c1 medium">
   <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_3.png" alt="Original, noisy input, and one-step estimate for t=0.25, t=0.50, t=0.75" loading="lazy">
-    <figcaption>Original, noisy input, and one-step estimate for $t=0.25$, $t=0.50$, $t=0.75$</figcaption>
+    <img src="/images/cs180/proj3/part_a/part_1/1_3_075.png" alt="Original, noisy input, and one-step estimate for t=0.25, t=0.50, t=0.75" loading="lazy">
+    <figcaption>Original, noisy input, and one-step estimate for $t=0.75$</figcaption>
+  </figure>
+</div>
+
+<div class="p3-grid c1 medium">
+  <figure>
+    <img src="/images/cs180/proj3/part_a/part_1/1_3_050.png" alt="Original, noisy input, and one-step estimate for t=0.25, t=0.50, t=0.75" loading="lazy">
+    <figcaption>Original, noisy input, and one-step estimate for $t=0.50$</figcaption>
+  </figure>
+</div>
+
+<div class="p3-grid c1 medium">
+  <figure>
+    <img src="/images/cs180/proj3/part_a/part_1/1_3_025.png" alt="Original, noisy input, and one-step estimate for t=0.25, t=0.50, t=0.75" loading="lazy">
+    <figcaption>Original, noisy input, and one-step estimate for $t=0.25$</figcaption>
   </figure>
 </div>
 
@@ -299,6 +313,13 @@ $$
 Both updates share a symmetric RGB scale (zero is mid-gray); all error maps use the same limits.
 
 The original $x_1$ is shown once in Section 1.1.
+
+<div class="p3-grid c1 medium">
+  <figure>
+    <img src="/images/cs180/proj3/part_a/part_1/original.png" alt="Original Image from Changbai Mountain" loading="lazy">
+    <figcaption>Original Image from Changbai Mountain in China</figcaption>
+  </figure>
+</div>
 
 <div class="p3-grid c1 medium">
   <figure>
