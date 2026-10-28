@@ -305,9 +305,11 @@ To test the warp I rectify rectangular objects in single photos. I click the fou
 
 <div class="p3-grid c3">
   <figure>
-    <img src="/images/cs180/proj4/images/A3/campus.jpg" alt="Original campus landmark photo" loading="lazy">
-    <figcaption>Original</figcaption>
-  </figure>
+  <div style="position:relative; aspect-ratio:3/4; overflow:hidden;">
+    <img src="/images/cs180/proj4/images/A3/campus.jpg" alt="Original campus landmark photo" loading="lazy" style="position:absolute; top:50%; left:50%; width:133.333%; max-width:none; height:auto; transform:translate(-50%,-50%) rotate(-90deg);">
+  </div>
+  <figcaption>Original</figcaption>
+</figure>
   <figure>
     <img src="/images/cs180/proj4/output/A3/campus_nearest.png" alt="Rectified campus landmark, nearest neighbor" loading="lazy">
     <figcaption>Nearest neighbor</figcaption>
