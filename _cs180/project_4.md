@@ -1,8 +1,8 @@
 ---
-title: "Project 3: Exploring the Power of Flow Models!"
+title: "Project 4A: Image Warping and Mosaicing"
 collection: cs180
-permalink: /cs180/project_3/
-date: 2026-10-20
+permalink: /cs180/project_4/
+date: 2026-10-28
 layout: projects
 ---
 
@@ -154,902 +154,409 @@ window.MathJax = {
 
 ## Overview
 
-Part A uses pretrained PixNerd for denoising, sampling, CFG, image editing, visual anagrams, and hybrids. Part B trains MNIST denoisers and time- and class-conditioned flow models from scratch.
+In this project I recover homographies from hand-clicked correspondences, warp images with inverse warping (nearest neighbor and bilinear, both written from scratch), rectify planar objects, and blend overlapping photos into mosaics with distance-transform feathering. Everything is done in homogeneous coordinates with only NumPy for linear algebra; no `cv2.findHomography` or `cv2.warpPerspective`.
 
-I use $t=0$ for pure noise and $t=1$ for a clean image; the network predicts velocity, not noise.
+Convention used throughout: the origin $(0,0)$ is the **top-left** pixel, $x$ is the column (increasing to the right), $y$ is the row (increasing downward), and images are read from top-left to bottom-right. In NumPy an image is indexed as `im[y, x]`.
 
-## Part A: Exploring the Power of Flow Models
+## A.1: Shoot the Pictures
 
-Part A uses PixNerd-XXL-P16-T2I with Qwen3, float32, seed $180$, and step size $h=0.02$. Guidance uses $w=7$ and an empty unconditional prompt; no training or gradients are needed.
+A homography only relates two photos exactly when the camera **rotates about its center of projection** (or the scene is planar). I shot several pairs with substantial overlap and as close together in time as I could, so lighting and moving subjects change as little as possible.
 
-<div class="p3-note" markdown="1">
-
-**Flow matching recap (Part A conventions)**
-
-Interpolate between Gaussian noise $\epsilon\sim\mathcal{N}(0,I)$ and a clean image $x_1$:
-
-$$
-x_t=(1-t)\,\epsilon+t\,x_1,\qquad t\in[0,1].
-$$
-
-The model learns $v_\theta(x_t,t,c)$ to predict path velocity $x_1-\epsilon$ for condition $c$:
-
-$$
-\mathcal{L}(\theta)=\mathbb{E}\left[\left\|v_\theta(x_t,t,c)-(x_1-\epsilon)\right\|_2^2\right].
-$$
-
-Sampling follows the learned ODE from $x_0=\epsilon$ to $t=1$:
-
-$$
-\frac{dx_t}{dt}=v_\theta(x_t,t,c).
-$$
-
-</div>
-
-### Section 1: Visualizing Training and Sampling
-
-#### Choosing my image
-
-For Sections 1.1–1.5 I use my photo of Changbai Mountain's Heaven Lake, rotated by $90^\circ$ and resized to $512\times512$ with RGB in $[-1,1]$.
-
-#### 1.1 Constructing Noisy Training Inputs
-
-Given clean image $x_1$ and noise $\epsilon$, the input at time $t$ is:
-
-$$
-x_t=(1-t)\,\epsilon+t\,x_1 .\tag{A.1}
-$$
-
-The image is scaled by $t$, noise by $1-t$, and $x_t$ interpolates between them. At $t=0$ the input is pure noise; at $t=1$ it is clean. I verified both endpoints numerically: $x_{0}=\epsilon$ and $x_{1}=x_1$.
-
-<table class="p3-table" style="width:auto; display:table; margin:1em auto;">
-  <thead><tr><th>$t$</th><th>image amplitude $t$</th><th>noise amplitude $1-t$</th></tr></thead>
-  <tbody>
-    <tr><td>0.25</td><td>0.25</td><td>0.75</td></tr>
-    <tr><td>0.50</td><td>0.50</td><td>0.50</td></tr>
-    <tr><td>0.75</td><td>0.75</td><td>0.25</td></tr>
-  </tbody>
-</table>
-
-I reused one noise tensor $\epsilon$ (`noise(SEED)`, seed $180$) at all three times, so only $t$ changes. I saved the original image, $\epsilon$, and the tensors for Sections 1.2–1.5, including the pair needed for the ground-truth velocity.
+**Set 1: second floor of Hearst Memorial Mining Building (HMMB).** Left and right views of the same balcony.
 
 <div class="p3-grid c1 medium">
   <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_1.png" alt="Original image and the noisy versions at t=0.25, t=0.50, and t=0.75" loading="lazy">
-    <figcaption>Original image (Changbai Mountain in China) and the noisy versions at $t=0.25$, $t=0.50$, and $t=0.75$</figcaption>
+    <img src="/images/cs180/proj4/output/A1/hmmb_rotation.png" alt="Second floor of HMMB taken from the left and right side" loading="lazy">
+    <figcaption>Set 1: second floor of HMMB, taken from the left and from the right</figcaption>
   </figure>
 </div>
 
-Larger $t$ keeps more detail: $t=0.75$ is clearest, $t=0.50$ retains large structures, and noise dominates at $t=0.25$.
+**Set 2: Wheeler Hall.** A second left/right pair with a fixed viewpoint. All of my other pairs (Martinez, Moffitt, Blackwell hallway and stairs, Campanile, Upper Sproul, Sather Gate) are shown with their mosaics in A.4.
 
-#### 1.2 Classical Denoising
-
-For a non-learned baseline, I restore the image amplitude in $x_t$ because it is scaled by $t$, then apply Gaussian blur. Averaging nearby pixels reduces noise but also removes detail:
-
-$$
-\frac{x_t}{t}=x_1+\frac{1-t}{t}\,\epsilon,\qquad \hat{x}_1^{\mathrm{blur}}=G_\sigma\!\left(\frac{x_t}{t}\right).
-$$
-
-Dividing by $t$ restores image amplitude but amplifies noise to standard deviation $\frac{1-t}{t}$: $3$, $1$, and $\tfrac13$ at $t=0.25,\,0.50,\,0.75$. The problem is worse at small $t$.
-
-I tested $\sigma\in\{1,2,4,8,16\}$ (kernel size $6\sigma+1$) and kept the $\sigma$ with lowest MSE against the clean image. This oracle baseline uses ground truth to select $\sigma$; the chosen $\sigma$ appears in each panel title.
-
-<div class="p3-grid c1 medium">
+<div class="p3-grid c2 medium">
   <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_2_sigma_1.png" alt="Noisy input (left) and best Gaussian-denoised result (right) for t=0.25, t=0.50, t=0.75" loading="lazy">
-    <figcaption>Noisy input (left) and best Gaussian-denoised result (right) for $t=0.75$</figcaption>
-  </figure>
-</div>
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_2_sigma_4.png" alt="Noisy input (left) and best Gaussian-denoised result (right) for t=0.25, t=0.50, t=0.75" loading="lazy">
-    <figcaption>Noisy input (left) and best Gaussian-denoised result (right) for $t=0.50$</figcaption>
-  </figure>
-</div>
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_2_sigma_8.png" alt="Noisy input (left) and best Gaussian-denoised result (right) for t=0.25, t=0.50, t=0.75" loading="lazy">
-    <figcaption>Noisy input (left) and best Gaussian-denoised result (right) for $t=0.25$</figcaption>
-  </figure>
-</div>
-
-Blur reduces noise but also removes detail. At $t=0.25$, the best result needs a large $\sigma$ and keeps only smooth colors; at $t=0.75$, rocks and lake ice remain soft. Gaussian blur cannot separate noise from fine texture.
-
-#### 1.3 One-Step Denoising
-
-The pretrained model returns $v_\theta(x_t,t,c)$ through `predict_velocity(x, t, condition)`. If the true velocity were exactly $x_1-\epsilon$ and constant, one step to $t=1$ would recover the image:
-
-$$
-x_t+(1-t)(x_1-\epsilon)=(1-t)\epsilon+t x_1+(1-t)x_1-(1-t)\epsilon=x_1 .
-$$
-
-The one-step clean-image estimate is:
-
-$$
-\hat{x}_1=x_t+(1-t)\,v_\theta(x_t,t,c).\tag{A.2}
-$$
-
-Velocity is added with $(1-t)$, not subtracted. I use the prompt `"a high quality photo"` and verify the prediction's shape, dtype, device, and finite values.
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_3_075.png" alt="Original, noisy input, and one-step estimate for t=0.25, t=0.50, t=0.75" loading="lazy">
-    <figcaption>Original, noisy input, and one-step estimate for $t=0.75$</figcaption>
-  </figure>
-</div>
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_3_050.png" alt="Original, noisy input, and one-step estimate for t=0.25, t=0.50, t=0.75" loading="lazy">
-    <figcaption>Original, noisy input, and one-step estimate for $t=0.50$</figcaption>
-  </figure>
-</div>
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_3_025.png" alt="Original, noisy input, and one-step estimate for t=0.25, t=0.50, t=0.75" loading="lazy">
-    <figcaption>Original, noisy input, and one-step estimate for $t=0.25$</figcaption>
-  </figure>
-</div>
-
-The one-step result from $x_t$ beats blur but is still soft. The predicted velocity at $(x_t,t)$ approximates $\mathbb{E}[x_1-\epsilon\mid x_t]$, so $x_t+(1-t)v_\theta$ approximates $\mathbb{E}[x_1\mid x_t]$, an average of plausible clean images. It is blurrier at $t=0.25$ and closer to the original at $t=0.75$.
-
-#### 1.4 Visualizing Velocity
-
-Section 1.3 adds $(1-t)\hat v_t$ to $x_t$. Here I compare it with the exact update $x_1-x_t$.
-
-$$
-v_{\mathrm{gt}}=x_1-\epsilon,\qquad (1-t)\,v_{\mathrm{gt}}=x_1-x_t,\qquad \hat v_t=v_\theta(x_t,t,c).
-$$
-
-The heatmap shows per-pixel RMS error across RGB, computed before display scaling or clipping:
-
-$$
-E_t(i,j)=\sqrt{\operatorname{mean}_{\mathrm{RGB}}\!\left(\Big[(1-t)\big(\hat v_t-v_{\mathrm{gt}}\big)\Big]^2\right)} .
-$$
-
-Both updates share a symmetric RGB scale (zero is mid-gray); all error maps use the same limits.
-
-The original $x_1$ is shown once in Section 1.1.
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/original.png" alt="Original Image from Changbai Mountain" loading="lazy">
-    <figcaption>Original Image from Changbai Mountain in China</figcaption>
-  </figure>
-</div>
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_4_1.png" alt="t=0.25: noisy image x_t, predicted update (1-t)\hat v_t, ground-truth update (1-t)v_{\mathrm{gt}}, and RMS error heatmap" loading="lazy">
-    <figcaption>$t=0.25$: noisy image $x_t$, predicted update $(1-t)\hat v_t$, ground-truth update $(1-t)v_{\mathrm{gt}}$, and RMS error heatmap</figcaption>
+    <img src="/images/cs180/proj4/images/A4/wheeler_left.jpg" alt="Wheeler Hall, left photo" loading="lazy">
+    <figcaption>Set 2: Wheeler Hall, left</figcaption>
   </figure>
   <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_4_2.png" alt="t=0.50: noisy image x_t, predicted update (1-t)\hat v_t, ground-truth update (1-t)v_{\mathrm{gt}}, and RMS error heatmap" loading="lazy">
-    <figcaption>$t=0.50$: noisy image $x_t$, predicted update $(1-t)\hat v_t$, ground-truth update $(1-t)v_{\mathrm{gt}}$, and RMS error heatmap</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_4_3.png" alt="t=0.75: noisy image x_t, predicted update (1-t)\hat v_t, ground-truth update (1-t)v_{\mathrm{gt}}, and RMS error heatmap" loading="lazy">
-    <figcaption>$t=0.75$: noisy image $x_t$, predicted update $(1-t)\hat v_t$, ground-truth update $(1-t)v_{\mathrm{gt}}$, and RMS error heatmap</figcaption>
-  </figure>
-</div>
-
-As $t$ grows, both updates shrink with $(1-t)$; at $t=0.75$ only one-quarter is added. The prediction captures large structures but cannot recover the exact noise $\epsilon$, so errors cluster around fine texture and edges.
-
-#### 1.5 Iterative Denoising with Euler Sampling
-
-The velocity changes along the path, so one large step is inaccurate. I recompute it after each small Euler step:
-
-$$
-x_{t+h}=x_t+h\,v_\theta(x_t,t,c).\tag{A.3}
-$$
-
-Starting at $t_0$ with $h=0.02$, I use $t_k=t_0+kh$ and $N=\lceil (1-t_0)/h\rceil$. The last step is shortened to $h_k=\min(h,\,1-t_k)$ so sampling ends at $t=1$. For $t_0=0.5$ this is $25$ steps; for $t_0=0$ it is $50$.
-
-For $v\equiv 1$, integrating from $t_0$ to $1$ gives $x=x_{\text{start}}+(1-t_0)$. The test matches for $t_0=0$ (50 steps), $t_0=0.5$ (25), and $t_0=0.93$ (4, with a final step of $0.01$).
-
-I run the $25$ Euler updates from the saved $t=0.50$ input with `"a high quality photo"`. The figure shows the start, every fifth update, and the final image (labels: $t=0.50,\,0.60,\,0.70,\,0.80,\,0.90,\,1.00$).
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_5.png" alt="Euler denoising trajectory from t=0.50 to t=1.00 (initial state, every fifth update, final image)" loading="lazy">
-    <figcaption>Euler denoising trajectory from $t=0.50$ to $t=1.00$ (initial state, every fifth update, final image)</figcaption>
-  </figure>
-</div>
-
-I compare the Euler result with the original, blur, and one-step estimate from the same $t=0.50$ input:
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_5_comp.png" alt="Original, Gaussian blur, one-step estimate, and Euler denoising from the same t=0.50 input" loading="lazy">
-    <figcaption>Original, Gaussian blur, one-step estimate, and Euler denoising from the same $t=0.50$ input</figcaption>
-  </figure>
-</div>
-
-Euler sampling recovers large structures first, then details. For the same $t=0.50$ input, it gives the sharpest result because each step re-evaluates velocity on a less-noisy image; blur and one-step denoising remain soft.
-
-#### 1.6 Generating Images from Noise
-
-I generate five images from pure noise with $t_{\text{start}}=0$, $50$ Euler updates, and `"a high quality photo"` (seeds $180$–$184$). I reuse these noises in Section 2.1.
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_6.png" alt="Five samples with the prompt 'a high quality photo' (no guidance), seeds 180–184" loading="lazy">
-    <figcaption>Five samples with the prompt "a high quality photo" (no guidance), seeds 180–184</figcaption>
-  </figure>
-</div>
-
-The generic prompt gives plausible but soft images with limited variety. CFG should improve sharpness and prompt alignment.
-
-### Section 2: Conditional Generation and Guidance
-
-#### 2.1 Classifier-Free Guidance (CFG)
-
-For CFG, I evaluate the same $x_t$ and $t$ with the text prompt ($v_c$) and empty prompt ($v_u$), then extrapolate past the conditional prediction:
-
-$$
-v_{\mathrm{cfg}}=v_c+w\,(v_c-v_u).\tag{A.4}
-$$
-
-I use $w=7$ and $h=0.02$; $w=0$ gives ordinary conditional sampling. Equivalently, $v_{\mathrm{cfg}}=v_u+(1+w)(v_c-v_u)$, so guidance scales the direction $v_c-v_u$ by $1+w$.
-
-I compare five guided samples at seeds $180$–$184$ with the unguided outputs from Section 1.6.
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_1/1_6.png" alt="Section 1.6: no guidance (w=0), seeds 180–184" loading="lazy">
-    <figcaption>Section 1.6: no guidance ($w=0$), seeds 180–184</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_2/2_1.png" alt="Section 2.1: classifier-free guidance, w=7, same seeds 180–184" loading="lazy">
-    <figcaption>Section 2.1: classifier-free guidance, $w=7$, same seeds 180–184</figcaption>
-  </figure>
-</div>
-
-With the same noise, CFG produces sharper, more saturated, more prompt-aligned images. Samples are less diverse because $1+w=8$ pushes them strongly along $v_c-v_u$; large $w$ can oversaturate colors.
-
-### Section 3: Creative Applications
-
-I use flow sampling for image editing and optical illusions, with Euler step size $h=0.02$, CFG weight $w=7$, and `""` as the unconditional prompt.
-
-#### 3.1 Image-to-Image Editing
-
-Following SDEdit, I noise a real image $x_1$ to starting time $t_0$, then run guided sampling from $t_0$ to $1$:
-
-$$
-x_{t_0}=(1-t_0)\,\epsilon+t_0\,x_1,\qquad x_{t+h}=x_t+h\,v_{\mathrm{cfg}}(x_t,t,c)\quad\text{for } t=t_0,\dots,1 .
-$$
-
-Smaller $t_0$ adds more noise and changes more; larger $t_0$ preserves the input. The starting time $t_0$ is the only variable across each row. I reuse seed $180$ for $\epsilon$ and test $t_0\in\{0.02,0.04,0.06,0.10,0.14,0.25,0.50\}$ with `"a high quality photo"`.
-
-For each start time $t_0$, Euler updates are given by $\lceil(1-t_0)/h\rceil$:
-
-<table class="p3-table" style="width:auto; display:table; margin:1em auto;">
-  <thead><tr><th>start time $t_0$</th><th>Euler updates</th></tr></thead>
-  <tbody>
-    <tr><td>0.02</td><td>49</td></tr>
-    <tr><td>0.04</td><td>48</td></tr>
-    <tr><td>0.06</td><td>47</td></tr>
-    <tr><td>0.10</td><td>45</td></tr>
-    <tr><td>0.14</td><td>43</td></tr>
-    <tr><td>0.25</td><td>38</td></tr>
-    <tr><td>0.50</td><td>25</td></tr>
-  </tbody>
-</table>
-
-For $t_0\le 0.06$, the input is nearly pure noise; at $t_0=0.50$, the original is much better preserved.
-
-**Campanile.**
-
-<div class="p3-grid c1 ">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/edit_campanile.png" alt="Campanile, prompt 'a high quality photo', starting times t_0=0.02\dots0.50" loading="lazy">
-    <figcaption>Campanile, prompt "a high quality photo", starting times $t_0=0.02\dots0.50$</figcaption>
-  </figure>
-</div>
-
-As $t_0$ increases, the output moves from an unrelated image toward the original Campanile. Its layout returns in the middle range; at $t_0=0.50$, the edit is close to the input.
-
-My test images are a pancake-and-blueberry plate (`pancake`) and a dessert cup from Yogurt Park (`yopo`), rotated $90^\circ$ clockwise.
-
-<div class="p3-grid c1 ">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/pancake_edit_my_image_1.png" alt="My image 1 (pancake plate), prompt 'a high quality photo'" loading="lazy">
-    <figcaption>My image 1 (Pancake Plate), prompt "a high quality photo"</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/yopo_edit_my_image_2.png" alt="My image 2 (cup of dessert), prompt 'a high quality photo'" loading="lazy">
-    <figcaption>My image 2 (Cup of Dessert at Yogurt Park), prompt "a high quality photo"</figcaption>
-  </figure>
-</div>
-
-For `yopo`, $t_0=0.02$ produces a man's face; $t_0=0.04$ and $0.06$ retain only the hand and invent an object. At $t_0=0.10$ and $0.14$, only the hand and some colors remain. The cup returns at $t_0=0.25$, and $t_0=0.50$ is close to the input.
-
-#### Editing hand-drawn and web images
-
-This sweep shows how editing pushes non-realistic inputs toward natural-looking images. I test one web image and two hand drawings.
-
-**Web image: Moon Lord from Terraria.** At $t_0=0.02$ the pixel art is gone and the model gives an unrelated photo of a man at a desk; at $t_0=0.04$ and $0.06$, only the raised-arm pose and teal color remain, as a man in a T-shirt with a helmet for a head. At $t_0=0.10$ and $0.14$, the head and ribcage become glass and metal with glowing teal orbs. The pixel-art Moon Lord returns at $t_0=0.25$ with smoother, more realistic shading.
-
-<div class="p3-grid c1 ">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/moon_lord_edit_web_image.png" alt="Web image (Moon Lord), prompt 'a high quality photo'" loading="lazy">
-    <figcaption>Web image (Moon Lord), prompt "a high quality photo"</figcaption>
-  </figure>
-</div>
-
-**Hand drawing 1: Golden Gate Bridge.** At $t_0=0.02$ the model gives a portrait; at $t_0=0.04$ and $0.06$, only colors remain. At $t_0=0.10$ and $0.14$, the tower and cables become a photo-style bridge. For $t_0\ge0.25$, the flat drawing returns.
-
-<div class="p3-grid c1 ">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/golden_gate_edit_drawing_1.png" alt="Hand drawing 1 (Golden Gate), prompt 'a high quality photo'" loading="lazy">
-    <figcaption>Hand drawing 1 (Golden Gate), prompt "a high quality photo"</figcaption>
-  </figure>
-</div>
-
-**Hand drawing 2: Tunnel View at Yosemite National Park.** At $t_0=0.02$ the model gives an unrelated portrait; at $t_0=0.04$ and $0.06$, the blocks become a building. At $t_0=0.10$ and $0.14$, the valley becomes photorealistic with a few drawing marks left. The flat drawing returns at $t_0=0.25$.
-
-<div class="p3-grid c1 ">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/yosemite_edit_drawing_2.png" alt="Hand drawing 2 (Yosemite), prompt 'a high quality photo'" loading="lazy">
-    <figcaption>Hand drawing 2 (Yosemite), prompt "a high quality photo"</figcaption>
-  </figure>
-</div>
-
-The best range for turning drawings into photos is $t_0=0.10$–$0.14$: enough structure remains to guide composition, while noise lets the model add photo textures.
-
-**Paintings from my sister**: a cat painting and a Van Gogh painting.
-
-<div class="p3-grid c1 ">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/cat_edit_drawing_3.png" alt="Extra: cat image, prompt 'a high quality photo'" loading="lazy">
-    <figcaption>Extra: cat painting, prompt "a high quality photo"</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/van_gogh_edit_drawing_4.png" alt="Extra: Van Gogh painting, prompt 'a high quality photo'" loading="lazy">
-    <figcaption>Extra: Van Gogh painting, prompt "a high quality photo"</figcaption>
-  </figure>
-</div>
-
-#### 3.2 Text-Guided Image Editing
-
-I use the same procedure as Section 3.1, but describe the desired edit. Smaller $t_0$ favors the prompt; larger $t_0$ preserves the original.
-
-<table class="p3-table" style="width:auto; display:table; margin:1em auto;">
-  <thead><tr><th>Image</th><th>Prompt</th></tr></thead>
-  <tbody>
-    <tr><td>Campanile</td><td><code>the big ben</code></td></tr>
-    <tr><td>My image 1 (pancake)</td><td><code>A seafood platter with lobster, crab, shrimp, mussels, and lemon wedges, photorealistic.</code></td></tr>
-    <tr><td>My image 2 (dessert cup)</td><td><code>male with pink and green hair</code></td></tr>
-  </tbody>
-</table>
-
-**Campanile with the prompt `"the big ben"`.**
-
-<div class="p3-grid c1 ">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/text_edit_campanile.png" alt="Campanile, prompt 'the big ben', starting times t_0=0.02\dots0.50" loading="lazy">
-    <figcaption>Campanile, prompt "the big ben", starting times $t_0=0.02\dots0.50$</figcaption>
-  </figure>
-</div>
-
-At small $t_0$, Big Ben dominates; at large $t_0$, the Campanile returns. In between, its tower silhouette remains but takes on Big Ben's style.
-
-**Pancake plate to a seafood feast.** At $t_0=0.02$ to $0.06$, the pancake is replaced by a seafood platter. At $t_0=0.10$ and $0.14$, the plate composition remains while seafood replaces the food. At $t_0=0.25$, pancake and seafood features mix; at $t_0=0.50$, the original pancake mostly returns.
-
-<div class="p3-grid c1 ">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/pancake_seafood_text_edit_my_image_1.png" alt="My image 1 (pancake), prompt: seafood feast on a large platter" loading="lazy">
-    <figcaption>My image 1 (pancake), prompt: seafood feast on a large platter</figcaption>
-  </figure>
-</div>
-
-**Dessert cup to a man with pink and green hair.** For $t_0\le0.06$, the model generates an unrelated portrait. At $t_0=0.10$ and $0.14$, it uses the image's pink and green as hair while retaining some background colors. At $t_0=0.25$, hair grows from the cup; at $t_0=0.50$, the cup returns with a pastel tint.
-
-<div class="p3-grid c1 ">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/yopo_man_text_edit_my_image_2.png" alt="My image 2 (dessert cup), prompt: 'male with pink and green hair'" loading="lazy">
-    <figcaption>My image 2 (dessert cup), prompt: "male with pink and green hair"</figcaption>
-  </figure>
-</div>
-
-Unlike the generic prompt in Section 3.1, the dessert cup is lost for $t_0\le0.14$ and the model invents faces or objects. The pink/green prompt reuses the image's colors to build the requested hair.
-
-#### 3.3 Visual Anagrams
-
-A visual anagram shows one subject upright and another after a $180^\circ$ rotation. I denoise $x_t$ with prompt $p_1$ and the rotated image with $p_2$, then rotate the second velocity back and average:
-
-$$
-v_1=v_{\mathrm{cfg}}(x_t,t,p_1),
-$$
-
-$$
-v_2=\operatorname{flip}\!\Big(v_{\mathrm{cfg}}\big(\operatorname{flip}(x_t),\,t,\,p_2\big)\Big),
-$$
-
-$$
-v=\frac{v_1+v_2}{2},\qquad x_{t+h}=x_t+h\,v .
-$$
-
-Here $\operatorname{flip}(\cdot)$ rotates by $180^\circ$ across both spatial axes, so $\operatorname{flip}(\operatorname{flip}(x))=x$. At each step, I evaluate $\operatorname{flip}$ on $x_t$ with $p_1$ and on the rotated $x_t$ with $p_2$. Pixel permutation preserves the noise distribution; averaging the guided velocities encourages both views.
-
-Each result is shown upright for $p_1$ and rotated $180^\circ$ for $p_2$. I tried multiple prompt/seed combinations because some runs do not make both subjects recognizable.
-
-<table class="p3-table" style="width:auto; display:table; margin:1em auto;">
-  <thead><tr><th>Illusion</th><th>Upright prompt $p_1$</th><th>Rotated prompt $p_2$</th><th>Seed</th></tr></thead>
-  <tbody>
-    <tr><td>1</td><td>an oil painting of an old man</td><td>an oil painting of people around a campfire</td><td>180</td></tr>
-    <tr><td>2</td><td>a lithograph of a snowy mountain village</td><td>a lithograph of a horse</td><td>181</td></tr>
-    <tr><td>3</td><td>watercolor painting of angel</td><td>watercolor painting of demon</td><td>180</td></tr>
-    <tr><td>4</td><td>watercolor painting of ancient chinese village</td><td>watercolor painting of medieval european-style town</td><td>180</td></tr>
-  </tbody>
-</table>
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/old_man_campfire_anagram_comparison.png" alt="Illusion 1: old man (upright) and people around a campfire (rotated 180^\circ)" loading="lazy">
-    <figcaption>Illusion 1: old man (upright) and people around a campfire (rotated $180^\circ$)</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/village_horse_anagram_comparison.png" alt="Illusion 2: snowy mountain village (upright) and a horse (rotated 180^\circ)" loading="lazy">
-    <figcaption>Illusion 2: snowy mountain village (upright) and a horse (rotated $180^\circ$)</figcaption>
-  </figure>
-</div>
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/angel_demon_anagram_comparison.png" alt="Illusion 3: angel (upright) and demon (rotated 180^\circ)" loading="lazy">
-    <figcaption>Illusion 3: angel (upright) and demon (rotated $180^\circ$)</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/chinese_european_village_anagram_anagram_comparison.png" alt="Illusion 4: ancient Chinese village (upright) and medieval European-style town (rotated 180^\circ)" loading="lazy">
-    <figcaption>Illusion 4: ancient Chinese village (upright) and medieval European-style town (rotated $180^\circ$)</figcaption>
-  </figure>
-</div>
-
-The old man/campfire and angel/demon pairs work best because their shapes map well after rotation. The village/horse and Chinese/European village pairs are weaker: details overlap or the scenes look too similar. Similar layouts, tones, and style words help both views remain recognizable.
-
-#### 3.4 Hybrid Images
-
-I combine low-frequency velocity from one prompt with high-frequency velocity from another to create a close/far hybrid:
-
-$$
-v_1=v_{\mathrm{cfg}}(x_t,t,p_1),\qquad v_2=v_{\mathrm{cfg}}(x_t,t,p_2),
-$$
-
-$$
-v=f_{\mathrm{lowpass}}(v_1)+f_{\mathrm{highpass}}(v_2),\qquad f_{\mathrm{highpass}}(v)=v-f_{\mathrm{lowpass}}(v),
-$$
-
-$$
-x_{t+h}=x_t+h\,v .
-$$
-
-$f_{\mathrm{lowpass}}$ is Gaussian blur with kernel size $265$ and $\sigma=16$ at $512\times512$ (formula: $2\cdot\mathrm{round}(16.5\cdot512/64)+1=265$). The coarse structure of $x$ follows $p_1$ (far view), and fine detail follows $p_2$ (close view). Thus $p_1$ is the distant prompt and $p_2$ the close prompt.
-
-Each hybrid is shown at $512\times512$ and reduced to $64\times64$ to reveal its low-frequency view.
-
-<table class="p3-table" style="width:auto; display:table; margin:1em auto;">
-  <thead><tr><th>Hybrid</th><th>Distant (low-frequency) prompt $p_1$</th><th>Close (high-frequency) prompt $p_2$</th></tr></thead>
-  <tbody>
-    <tr><td>1</td><td style="white-space:normal; text-align:left;">an oil painting of a glowing crystal ball, a round transparent glass sphere with swirling light inside</td><td style="white-space:normal; text-align:left;">an oil painting of a girl in an elaborate, whimsical fantasy costume buying goods at a market stall in a medieval European-style town, magical fantasy world, cobblestone street, half-timbered houses, warm lantern light</td></tr>
-    <tr><td>2</td><td style="white-space:normal; text-align:left;">an oil painting of a modern intact metropolis, a tall glass skyscraper in the center of a city skyline, sleek towers, clear sky, muted dusty colors</td><td style="white-space:normal; text-align:left;">an oil painting of a pair of twins living inside a crumbling skyscraper in a ruined post-apocalyptic city, overgrown with moss, dusty muted colors, broken windows</td></tr>
-    <tr><td>3</td><td>a lithography of a cat</td><td>a lithography of a dog</td></tr>
-    <tr><td>4</td><td>a lithography of a temple</td><td>a lithography of a church</td></tr>
-  </tbody>
-</table>
-
-<div class="p3-grid c2 medium" style="align-items:flex-end;">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/fantasy_world_crystal_ball_hybrid.png" alt="Hybrid 1 full size" loading="lazy">
-    <figcaption>Hybrid 1, close view (full size): "an oil painting of a girl in a fantasy costume buying goods at a market stall"</figcaption>
-  </figure>
-  <figure style="flex: 0 0 auto;">
-    <img src="/images/cs180/proj3/part_a/part_3/fantasy_world_crystal_ball_hybrid.png" alt="Hybrid 1 reduced to 64 by 64" style="width:64px; min-width:64px; margin:0 auto; image-rendering:auto;" loading="lazy">
-    <figcaption>Hybrid 1, distant view ($64\times64$): "an oil painting of a glowing crystal ball"</figcaption>
-  </figure>
-</div>
-
-<div class="p3-grid c2 medium" style="align-items:flex-end;">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/post_apocalyptic_city_jungle_hybrid.png" alt="Hybrid 2 full size" loading="lazy">
-    <figcaption>Hybrid 2, close view (full size): "an oil painting of twins living inside a crumbling skyscraper in a ruined post-apocalyptic city"</figcaption>
-  </figure>
-  <figure style="flex: 0 0 auto;">
-    <img src="/images/cs180/proj3/part_a/part_3/post_apocalyptic_city_jungle_hybrid.png" alt="Hybrid 2 reduced to 64 by 64" style="width:64px; min-width:64px; margin:0 auto; image-rendering:auto;" loading="lazy">
-    <figcaption>Hybrid 2, distant view ($64\times64$): "an oil painting of a modern intact metropolis, a tall glass skyscraper"</figcaption>
-  </figure>
-</div>
-
-<div class="p3-grid c2 medium" style="align-items:flex-end;">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/cat_dog_hybrid_0.png" alt="Hybrid 3 full size" loading="lazy">
-    <figcaption>Hybrid 3, close view (full size): "a lithography of a dog"</figcaption>
-  </figure>
-  <figure style="flex: 0 0 auto;">
-    <img src="/images/cs180/proj3/part_a/part_3/cat_dog_hybrid_0.png" alt="Hybrid 3 reduced to 64 by 64" style="width:64px; min-width:64px; margin:0 auto; image-rendering:auto;" loading="lazy">
-    <figcaption>Hybrid 3, distant view ($64\times64$): "a lithography of a cat"</figcaption>
-  </figure>
-</div>
-
-<div class="p3-grid c2 medium" style="align-items:flex-end;">
-  <figure>
-    <img src="/images/cs180/proj3/part_a/part_3/church_temple_hybrid_0.png" alt="Hybrid 4 full size" loading="lazy">
-    <figcaption>Hybrid 4, close view (full size): "a lithography of a church"</figcaption>
-  </figure>
-  <figure style="flex: 0 0 auto;">
-    <img src="/images/cs180/proj3/part_a/part_3/church_temple_hybrid_0.png" alt="Hybrid 4 reduced to 64 by 64" style="width:64px; min-width:64px; margin:0 auto; image-rendering:auto;" loading="lazy">
-    <figcaption>Hybrid 4, distant view ($64\times64$): "a lithography of a temple"</figcaption>
-  </figure>
-</div>
-
-Hybrid 1 reads as a market scene with two cloaked figures at a stall at full size, while at $64\times64$ the large glowing circle of the crystal ball takes over. Hybrid 2 reads as children sitting in mossy ruins up close, and in the reduced version the tall skyscraper in the green haze stands out. Hybrid 3 reads as a dog at full size, but at $64\times64$ its cat silhouette is weak. Hybrid 4 reads mostly as a church; the temple is hard to see in the reduced version. High-frequency detail tends to win, so distinct coarse silhouettes with similar tones work best.
-
-## Part B: Flow Matching from Scratch!
-
-In Part B I train MNIST denoisers and flow models from scratch. I compare one-step denoising with iterative generation, using time conditioning, class conditioning, and CFG. Models use the 60,000-image MNIST training set, pixels in $[0,1]$, fresh noise, seed $180$, and a Tesla T4 GPU.
-
-### Part 1: Training a Single-Step Denoising UNet
-
-I train a UNet denoiser $D_\theta$ to map noisy image $z$ to clean image $x$ using L2 loss:
-
-$$
-L=\mathbb{E}_{z,x}\left\|D_\theta(z)-x\right\|^2 .\tag{B.1}
-$$
-
-#### 1.1 Implementing the UNet
-
-The UNet has two downsampling blocks, a bottleneck, two upsampling blocks, and channel-wise skip connections. Layers use batch normalization (`BN`) and `GELU`:
-
-- **Conv**: `Conv2d(3, 1, 1)` + BN + GELU. Changes only the number of channels.
-- **DownConv**: `Conv2d(3, 2, 1)` + BN + GELU. Halves the height and width.
-- **UpConv**: `ConvTranspose2d(4, 2, 1)` + BN + GELU. Doubles the height and width.
-- **Flatten**: `AvgPool2d(7)` + GELU. Turns a $7\times7$ map into $1\times1$.
-- **Unflatten**: `ConvTranspose2d(7, 7, 0)` + BN + GELU. Turns a $1\times1$ map back into $7\times7$.
-- **ConvBlock**: Conv → Conv. **DownBlock**: DownConv → ConvBlock. **UpBlock**: UpConv → ConvBlock. These only add depth and do not change the shape.
-
-$D$ is the hidden width. For input $1\times28\times28$, the network shapes are:
-
-<table class="p3-table" style="width:auto; display:table; margin:1em auto;">
-  <thead><tr><th>Stage</th><th>Operation</th><th>Output shape</th></tr></thead>
-  <tbody>
-    <tr><td>input</td><td></td><td>$1\times28\times28$</td></tr>
-    <tr><td>x1</td><td>ConvBlock</td><td>$D\times28\times28$</td></tr>
-    <tr><td>x2</td><td>DownBlock</td><td>$D\times14\times14$</td></tr>
-    <tr><td>x3</td><td>DownBlock</td><td>$2D\times7\times7$</td></tr>
-    <tr><td>z</td><td>Flatten, then Unflatten</td><td>$2D\times1\times1$, then $2D\times7\times7$</td></tr>
-    <tr><td>u1</td><td>Concat(x3, z) ($4D$ channels), then UpBlock</td><td>$D\times14\times14$</td></tr>
-    <tr><td>u2</td><td>Concat(x2, u1) ($2D$ channels), then UpBlock</td><td>$D\times28\times28$</td></tr>
-    <tr><td>output</td><td>Concat(x1, u2) ($2D$ channels), ConvBlock, then <code>Conv2d(3,1,1)</code></td><td>$1\times28\times28$</td></tr>
-  </tbody>
-</table>
-
-#### 1.2 Using the UNet to Train a Denoiser
-
-I create training pairs $(z,x)$, where $x$ is a clean MNIST image. I make $z$ from $x$ using:
-
-$$
-z=x+\sigma\epsilon,\qquad \epsilon\sim\mathcal{N}(0,I),\tag{B.2}
-$$
-
-With $x\in[0,1]$, the figure uses $\sigma\in\{0.0,0.2,0.4,0.5,0.6,0.8,1.0\}$. Increasing $\sigma$ obscures the digits; at $\sigma=1.0$, noise nearly hides them.
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_1_2.png" alt="Noising process z=x+\sigma\epsilon for \sigma=0.0,\,0.2,\,0.4,\,0.5,\,0.6,\,0.8,\,1.0 (five digits)" loading="lazy">
-    <figcaption>Noising process $z=x+\sigma\epsilon$ for $\sigma=0.0,\,0.2,\,0.4,\,0.5,\,0.6,\,0.8,\,1.0$ (five digits)</figcaption>
-  </figure>
-</div>
-
-##### 1.2.1 Training
-
-I train the denoiser with **$\sigma=0.5$**:
-
-<table class="p3-table" style="width:auto; display:table; margin:1em auto;">
-  <tbody>
-    <tr><td>Model</td><td>UNet, hidden dimension $D=128$</td></tr>
-    <tr><td>Data</td><td>MNIST train set, shuffled, batch size 256 (235 iterations per epoch)</td></tr>
-    <tr><td>Noise</td><td>$z=x+0.5\,\epsilon$, a <strong>fresh</strong> $\epsilon$ every time a batch is fetched, so each epoch sees new noisy versions</td></tr>
-    <tr><td>Loss / optimizer</td><td>MSE (B.1), Adam, learning rate $10^{-4}$, no scheduler</td></tr>
-    <tr><td>Epochs</td><td>5</td></tr>
-  </tbody>
-</table>
-
-**Training loss curve.** Loss drops sharply in the first ~100 iterations, then more slowly. Last-batch losses for epochs $1$ to $5$ are $0.0120,\ 0.0101,\ 0.0092,\ 0.0091,\ 0.0085$.
-
-<div class="p3-grid c1 narrow">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_1_2_1_loss_graph.png" alt="Training loss (MSE) of the \sigma=0.5 denoiser over all 5 epochs" loading="lazy">
-    <figcaption>Training loss (MSE) of the $\sigma=0.5$ denoiser over all 5 epochs</figcaption>
-  </figure>
-</div>
-
-**Test-set results** use the same digits and noise for comparison. Rows show clean, noisy ($\sigma=0.5$), and denoised images.
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_1_2_1_epoch_1.png" alt="Test-set results after epoch 1 (rows: clean / noisy \sigma=0.5 / denoised)" loading="lazy">
-    <figcaption>Test-set results after epoch 1 (rows: clean / noisy $\sigma=0.5$ / denoised)</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_1_2_1_epoch_5.png" alt="Test-set results after epoch 5 (rows: clean / noisy \sigma=0.5 / denoised)" loading="lazy">
-    <figcaption>Test-set results after epoch 5 (rows: clean / noisy $\sigma=0.5$ / denoised)</figcaption>
-  </figure>
-</div>
-
-After epoch 1, digits are recognizable but grainy; by epoch 5, strokes are smoother and backgrounds cleaner.
-
-##### 1.2.2 Out-of-Distribution Testing
-
-The model was trained only at $\sigma=0.5$. I keep the same test digits and noise direction $\epsilon$ and vary $\sigma\in\{0.0,0.2,0.4,0.5,0.6,0.8,1.0\}$, so $z=x+\sigma\epsilon$ for fixed $\epsilon$.
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_1_2_2.png" alt="Denoiser trained at \sigma=0.5, tested at \sigma=0.0,\,0.2,\,0.4,\,0.5,\,0.6,\,0.8,\,1.0 (noisy rows and denoised rows)" loading="lazy">
-    <figcaption>Denoiser trained at $\sigma=0.5$, tested at $\sigma=0.0,\,0.2,\,0.4,\,0.5,\,0.6,\,0.8,\,1.0$ (noisy rows and denoised rows)</figcaption>
-  </figure>
-</div>
-
-For $\sigma\le0.5$, the model restores digits well, even at $\sigma=0.2$ and $0.4$. Clean inputs ($\sigma=0.0$) become slightly blurry. Larger noise ($\sigma=0.6$ and above) degrades results: strokes break at $\sigma=0.6$, while $\sigma=0.8$ and $1.0$ produce artifacts.
-
-##### 1.2.3 Denoising Pure Noise
-
-I repeat training with pure noise $z=\epsilon\sim\mathcal{N}(0,I)$ as input and clean digits as targets, using the same $D=128$ UNet, Adam $10^{-4}$, batch 256, and 5 epochs as Section 1.2.1.
-
-<div class="p3-grid c1 narrow">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_1_2_3_loss_graph.png" alt="Training loss of the pure-noise denoiser over all 5 epochs" loading="lazy">
-    <figcaption>Training loss of the pure-noise denoiser over all 5 epochs</figcaption>
-  </figure>
-</div>
-
-Loss plateaus near $0.067$, above the $\sigma=0.5$ denoiser's $0.0085$. Last-batch losses are $0.0679,\ 0.0685,\ 0.0654,\ 0.0741,\ 0.0679$.
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_1_2_3_epoch_1.png" alt="Pure-noise denoiser after epoch 1 (rows: clean digits / noise input / output)" loading="lazy">
-    <figcaption>Pure-noise denoiser after epoch 1 (rows: clean digits / noise input / output)</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_1_2_3_epoch_5.png" alt="Pure-noise denoiser after epoch 5 (rows: clean digits / noise input / output)" loading="lazy">
-    <figcaption>Pure-noise denoiser after epoch 5 (rows: clean digits / noise input / output)</figcaption>
-  </figure>
-</div>
-
-**What patterns do I observe?** Every noise input produces the same blurry, average-looking blob rather than a digit. Epoch 5 is smoother than epoch 1 but has the same shape.
-
-**Why?** The pure-noise input $z$ is independent of digit $x$, so it gives no class information. Under MSE, the best fixed prediction minimizes squared distance to the training images. For any fixed input $z$, it is:
-
-$$
-D^*(z)=\arg\min_f\ \mathbb{E}_x\|f-x\|^2=\mathbb{E}[x\mid z]=\mathbb{E}[x]=\bar{x}.
-$$
-
-The output is the training-set mean (centroid) of digits $0$–$9$, bright where strokes overlap and blurry where they cancel. The loss plateaus at $\mathbb{E}\|x-\bar{x}\|^2$ per pixel. With no digit information, one-step denoising returns an average; flow matching adds information over many steps.
-
-### Part 2: Training a Flow Matching Model
-
-One-step denoising fails at generation, so I use flow matching: sample noise $x_0\sim\mathcal{N}(0,I)$ and interpolate toward a clean training image $x_1$. For clean image $x_1$, the sample at time $t$ is:
-
-$$
-x_t=(1-t)\,x_0+t\,x_1,\qquad x_0\sim\mathcal{N}(0,I),\quad t\in[0,1].\tag{B.3}
-$$
-
-Small $t$ is close to noise; large $t$ approaches the data. The path's **flow** (velocity) is:
-
-$$
-u(x_t,t)=\frac{d}{dt}x_t=x_1-x_0.\tag{B.4}
-$$
-
-The UNet $u_\theta(x_t,t)$ learns this velocity by minimizing:
-
-$$
-L=\mathbb{E}_{x_0\sim p_0,\ x_1\sim p_1,\ t\sim U[0,1]}\left\|(x_1-x_0)-u_\theta(x_t,t)\right\|^2.\tag{B.5}
-$$
-
-The network predicts flow $x_1-x_0$, not the clean image. Since many $(x_0,x_1)$ pairs can produce the same $(x_t,t)$, it learns the conditional mean $\mathbb{E}[x_1-x_0\mid x_t,t]$; integrating this field generates samples.
-
-#### 2.1 Adding Time Conditioning to UNet
-
-The model needs to know $t$ because the same $x_t$ requires a different velocity at different times. I inject the scalar $t$ with FCBlock: `Linear(F_in, F_out)` → `GELU` → `Linear(F_out, F_out)`. Since $t$ is scalar, $F_{in}=1$; I normalize $t$ to $[0,1]$ before embedding.
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/fc_long.png" alt="FCBlock diagram" loading="lazy">
-    <figcaption>FCBlock: a Linear layer from F_in to F_out followed by GELU, then a Linear layer from F_out to F_out</figcaption>
-  </figure>
-</div>
-
-<div class="p3-grid c1">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/conditional_arch_fm.png" alt="Time-conditioned UNet architecture" loading="lazy">
-    <figcaption>Time-conditioned UNet: two FCBlocks inject the time t (red box) into the unflatten output and into the first up-block</figcaption>
-  </figure>
-</div>
-
-I modulate decoder features by channel-wise multiplication. Here $t_1=\mathrm{FCBlock}_1(t)\in\mathbb{R}^{2D}$ and $t_2=\mathrm{FCBlock}_2(t)\in\mathbb{R}^{D}$, reshaped to $2D\times1\times1$ and $D\times1\times1$ so each channel's scalar is broadcast over all spatial positions. Writing $k$ for the channel index and $(h,w)$ for the spatial position:
-
-$$
-\text{unflatten}'_{k,h,w}=t_{1,k}\,\text{unflatten}_{k,h,w},\qquad \text{up1}'_{k,h,w}=t_{2,k}\,\text{up1}_{k,h,w},
-$$
-
-or in short, $\text{unflatten}'=\text{unflatten}\odot t_1$ and $\text{up1}'=\text{up1}\odot t_2$, where $\odot$ is the element-wise (Hadamard) product after broadcasting. The primes only mean "the modulated version of" the original tensor.
-
-#### 2.2 Training the UNet
-
-Algorithm B.1 trains time-conditioned UNet $u_\theta(x_t,t)$ to predict flow $x_1-x_0$. It samples clean image $x_1$, time $t\sim U[0,1]$, and noise $x_0\sim\mathcal{N}(0,I)$, builds $x_t$ using (B.3), and minimizes flow error. Each batch sample gets its own $t$ and $x_0$.
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/algo1_t_only_fm.png" alt="Algorithm B.1: training the time-conditioned UNet" loading="lazy">
-    <figcaption>Algorithm B.1: training the time-conditioned UNet</figcaption>
-  </figure>
-</div>
-
-<table class="p3-table" style="width:auto; display:table; margin:1em auto;">
-  <thead><tr><th>Setting</th><th>Value</th></tr></thead>
-  <tbody>
-    <tr><td>Model</td><td>TimeConditionalUNet, hidden dimension $D=64$</td></tr>
-    <tr><td>Data</td><td>MNIST train set, shuffled, batch size 64 (938 iterations per epoch)</td></tr>
-    <tr><td>Optimizer</td><td>Adam, initial learning rate $10^{-2}$</td></tr>
-    <tr><td>Scheduler</td><td><code>ExponentialLR</code>, $\gamma=0.1^{1/\text{num\_epochs}}$, <code>scheduler.step()</code> once per epoch (the learning rate goes from $10^{-2}$ down to $10^{-3}$)</td></tr>
-    <tr><td>Epochs</td><td>10</td></tr>
-  </tbody>
-</table>
-
-<div class="p3-grid c1 narrow">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_2_2.png" alt="Training loss of the time-conditioned UNet over all 10 epochs (9,380 iterations)" loading="lazy">
-    <figcaption>Training loss of the time-conditioned UNet over all 10 epochs (9,380 iterations)</figcaption>
-  </figure>
-</div>
-
-At learning rate $10^{-2}$, loss falls from above $2$ to about $0.09$–$0.10$. Last-batch losses are $0.1445$, $0.0944$, and $0.0961$ after epochs 1, 5, and 10. It stays nonzero because the target flow $x_1-x_0$ is ambiguous for a fixed $x_t$, so the model learns an average flow for $x_t$.
-
-#### 2.3 Sampling from the UNet
-
-Algorithm B.2 starts from noise $x_0$ and takes $T=50$ Euler steps of size $1/T$ from $t=0$ to $t=1$, evaluating the network at each $x_t$ and $t$:
-
-$$
-x_{t+1/T}=x_t+\frac{1}{T}\,u_\theta(x_t,t),\qquad t=0,\tfrac{1}{T},\dots,\tfrac{T-1}{T}.
-$$
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/algo2_t_only_fm.png" alt="Algorithm B.2: sampling from the time-conditioned UNet" loading="lazy">
-    <figcaption>Algorithm B.2: sampling from the time-conditioned UNet</figcaption>
-  </figure>
-</div>
-
-I sample $40$ digits from checkpoints at epochs $1$, $5$, and $10$, reusing the same $40$ starting noises for comparison.
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_2_3_epoch_1.png" alt="Time-conditioned flow matching, samples after epoch 1" loading="lazy">
-    <figcaption>Time-conditioned flow matching: 40 samples after epoch 1</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_2_3.png" alt="Time-conditioned flow matching, samples after epoch 5" loading="lazy">
-    <figcaption>Time-conditioned flow matching: 40 samples after epoch 5</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_2_3_epoch_10.png" alt="Time-conditioned flow matching, samples after epoch 10" loading="lazy">
-    <figcaption>Time-conditioned flow matching: 40 samples after epoch 10</figcaption>
-  </figure>
-</div>
-
-Epoch 1 outputs are mostly fragmented strokes; epoch 5 is more recognizable but still distorted. Epoch 10 improves quality, but some digits remain malformed. Time-only conditioning cannot specify which digit to draw, so samples can mix classes.
-
-#### 2.4 Adding Class-Conditioning to UNet
-
-I add the digit class $c$, with $c\in\{0,\dots,9\}$, as a one-hot vector and use two FCBlocks: $F_{in}=10$, $c_1=\mathrm{FCBlock}_1(c)\in\mathbb{R}^{2D}$, and $c_2=\mathrm{FCBlock}_2(c)\in\mathbb{R}^{D}$. Class and time embeddings both modulate the features: the class embedding scales each channel and the time embedding shifts it (both broadcast over $h,w$):
-
-$$
-\text{unflatten}'_{k,h,w}=c_{1,k}\,\text{unflatten}_{k,h,w}+t_{1,k},\qquad \text{up1}'_{k,h,w}=c_{2,k}\,\text{up1}_{k,h,w}+t_{2,k},
-$$
-
-i.e. $\text{unflatten}'=c_1\odot\text{unflatten}+t_1$ and $\text{up1}'=c_2\odot\text{up1}+t_2$.
-
-For CFG, I drop class $c$ to the zero vector with probability $p_{\text{uncond}}=0.1$, independently for each sample.
-
-#### 2.5 Training the UNet
-
-Algorithm B.3 uses one-hot class $c$ and replaces it with zero with probability $p_{\text{uncond}}=0.1$. The network learns conditional $u_\theta(x_t,t,c)$ and unconditional $u_\theta(x_t,t,0)$ flows.
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/algo3_c_fm.png" alt="Algorithm B.3: training the class-conditioned UNet" loading="lazy">
-    <figcaption>Algorithm B.3: training the class-conditioned UNet</figcaption>
-  </figure>
-</div>
-
-I use $D=64$, batch size $64$, Adam at $10^{-2}$, `ExponentialLR` with $\gamma=0.1^{1/10}$, $10$ epochs, and $p_{\text{uncond}}=0.1$. Checkpoints are saved at epochs $1$, $5$, and $10$.
-
-<div class="p3-grid c1 narrow">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_2_5_loss_scheduler.png" alt="Training loss of the class-conditioned UNet (with the exponential learning-rate scheduler)" loading="lazy">
-    <figcaption>Training loss of the class-conditioned UNet (with the exponential learning-rate scheduler)</figcaption>
-  </figure>
-</div>
-
-Loss drops from an initial spike near $12$ at learning rate $10^{-2}$ to about $0.1$. Last-batch losses are $0.1227$, $0.0822$, and $0.1030$ at epochs 1, 5, and 10. These single-batch values fluctuate; sample quality improves even when loss looks flat.
-
-#### 2.6 Sampling from the UNet
-
-At each of $T=300$ Euler steps, I evaluate unconditional and class-$c$ flows at the same $(x_t,t)$ and apply CFG with $\gamma=5.0$:
-
-$$
-u=u_{\mathrm{uncond}}+\gamma\,(u_{\mathrm{cond}}-u_{\mathrm{uncond}}),\qquad x_{t+1/T}=x_t+\frac{1}{T}\,u .
-$$
-
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/algo4_c_fm.png" alt="Algorithm B.4: class-conditional sampling with classifier-free guidance" loading="lazy">
-    <figcaption>Algorithm B.4: class-conditional sampling with classifier-free guidance</figcaption>
+    <img src="/images/cs180/proj4/images/A4/wheeler_right.jpg" alt="Wheeler Hall, right photo" loading="lazy">
+    <figcaption>Set 2: Wheeler Hall, right</figcaption>
   </figure>
 </div>
 
 <div class="p3-note" markdown="1">
 
-**Note: two CFG conventions.** Part A uses $v_c+w(v_c-v_u)$; Part B uses $u_u+\gamma(u_c-u_u)$. They match when $\gamma=1+w$ because $v_c+w(v_c-v_u)=v_u+(1+w)(v_c-v_u)$. Thus $\gamma=5$ equals $w=4$, and $\gamma=1$ is conditional sampling.
+**A mistake I only understood later.** For the HMMB pair the correspondences look good (A.2), but when I got to A.4 I realized I had misread the instructions: I rotated my *hand* (about the axis of my body) instead of rotating the *phone* about its own center. That adds a large translation between the two viewpoints, which a homography cannot model, and it is why my first batch of mosaics stitched badly. The sets in A.4 are the ones that stitched acceptably.
 
 </div>
 
-I generate 4 samples per digit ($4\times10$ grid, with each row $0,1,\dots,9$) using $300$ Euler steps, $\gamma=5$, and the same seed at epochs $1$, $5$, and $10$.
+## A.2: Recover Homographies
 
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_2_6_class_conditioned_epoch_1.png" alt="Class-conditioned flow matching with CFG (\gamma=5), samples after epoch 1" loading="lazy">
-    <figcaption>Class-conditioned flow matching with CFG ($\gamma=5$), samples after epoch 1</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_2_6_class_conditioned_epoch_5.png" alt="Class-conditioned flow matching with CFG (\gamma=5), samples after epoch 5" loading="lazy">
-    <figcaption>Class-conditioned flow matching with CFG ($\gamma=5$), samples after epoch 5</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_2_6_class_conditioned_epoch_10.png" alt="Class-conditioned flow matching with CFG (\gamma=5), samples after epoch 10" loading="lazy">
-    <figcaption>Class-conditioned flow matching with CFG ($\gamma=5$), samples after epoch 10</figcaption>
-  </figure>
-</div>
+A homography maps a point $p=(x,y,1)^\top$ in image 1 to $p'\sim(x',y',1)^\top$ in image 2:
 
-Class conditioning greatly improves samples. After epoch 1, each column shows the requested digit, though some $4$s, $5$s, $6$s, and $9$s are distorted. By epoch 5 all 40 are legible; by epoch 10 the strokes are smoother, with natural variation in the $1$s, $2$s, $4$s, and $7$s. Class labels resolve ambiguity, and CFG sharpens the class-specific samples.
+$$
+p' \sim H p,\qquad H=\begin{bmatrix}h_1&h_2&h_3\\h_4&h_5&h_6\\h_7&h_8&1\end{bmatrix}.
+$$
 
-##### Removing the learning-rate scheduler
+$H$ is only defined up to scale, so fixing $h_9=1$ leaves **8 unknowns**. Dividing out the third coordinate and multiplying through gives two *linear* equations per correspondence:
 
-**Can I get rid of the exponential learning-rate scheduler and keep the same quality?** The scheduler decays the learning rate by $\gamma=0.1^{1/10}\approx0.79$ each epoch, from $10^{-2}$ to $10^{-3}$. I replace it with a constant $3\times10^{-3}$ and keep the other settings (batch size $64$, $D=64$, $10$ epochs, $p_{\text{uncond}}=0.1$, $T=300$, $\gamma=5$, same seed). This is near the geometric mean, $10^{-2}\cdot0.1^{1/2}\approx3.2\times10^{-3}$ and below $10^{-2}$. I do not tune it further.
+$$
+\underbrace{\begin{bmatrix}x&y&1&0&0&0&-x'x&-x'y\\0&0&0&x&y&1&-y'x&-y'y\end{bmatrix}}_{2\times 8}
+\underbrace{\begin{bmatrix}h_1\\\vdots\\h_8\end{bmatrix}}_{8\times1}
+=\underbrace{\begin{bmatrix}x'\\y'\end{bmatrix}}_{2\times1}.
+$$
 
-<div class="p3-grid c1 narrow">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_2_5_loss_no_scheduler.png" alt="Training loss of the class-conditioned UNet without the scheduler (constant learning rate 3\times10^{-3})" loading="lazy">
-    <figcaption>Training loss of the class-conditioned UNet without the scheduler (constant learning rate $3\times10^{-3}$)</figcaption>
-  </figure>
-</div>
+Stacking $n$ correspondences gives $A\,h=b$ with $A\in\mathbb{R}^{2n\times 8}$ and $b\in\mathbb{R}^{2n}$. Four correspondences give a square system, but it is very sensitive to click error. I used **8 to 13** correspondences per pair (12 for HMMB, so $A$ is $24\times8$) and solve the overdetermined system by least squares, $\hat h=\arg\min_h\|Ah-b\|_2^2$. More correspondences average out click noise, so more is better.
 
-I sample the model without the scheduler using the same setup: 4 per digit, $T=300$, $\gamma=5$.
+#### Why I normalize the points first
 
-<div class="p3-grid c1 medium">
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_2_6_class_conditioned_no_scheduler_epoch_1.png" alt="Class-conditioned flow matching without scheduler (\gamma=5), samples after epoch 1" loading="lazy">
-    <figcaption>Class-conditioned flow matching <strong>without scheduler</strong> ($\gamma=5$), samples after epoch 1</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_2_6_class_conditioned_no_scheduler_epoch_5.png" alt="Class-conditioned flow matching without scheduler (\gamma=5), samples after epoch 5" loading="lazy">
-    <figcaption>Class-conditioned flow matching <strong>without scheduler</strong> ($\gamma=5$), samples after epoch 5</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj3/part_b/part_2_6_class_conditioned_no_scheduler_epoch_10.png" alt="Class-conditioned flow matching without scheduler (\gamma=5), samples after epoch 10" loading="lazy">
-    <figcaption>Class-conditioned flow matching <strong>without scheduler</strong> ($\gamma=5$), samples after epoch 10</figcaption>
-  </figure>
-</div>
+Without normalization, least squares did not work well. Pixel coordinates are in the thousands, so the columns holding $x'x$ and $x'y$ are around $10^6$–$10^7$ while the column of ones is $1$. Points with large $x,y$ dominate the residual, and the solution is wrecked by the huge difference in column scales. My points were also tightly clustered in one corner of the image, which makes things worse.
+
+The fix is to translate each point set so its centroid is at the origin and scale it so the mean distance to the origin is $\sqrt2$, using similarity transforms $T_1$, $T_2$. I solve for $\tilde H$ on the normalized points and undo it:
+
+$$
+H = T_2^{-1}\,\tilde H\,T_1 .
+$$
+
+For the HMMB pair this changes the system dramatically:
 
 <table class="p3-table" style="width:auto; display:table; margin:1em auto;">
-  <thead><tr><th>Epoch</th><th>With scheduler (last-batch loss)</th><th>Constant lr $3\times10^{-3}$ (last-batch loss)</th></tr></thead>
+  <thead><tr><th></th><th>$\kappa(A)$</th><th>mean reprojection error</th><th>max error</th></tr></thead>
   <tbody>
-    <tr><td>1</td><td>0.1227</td><td>0.1101</td></tr>
-    <tr><td>5</td><td>0.0822</td><td>0.0795</td></tr>
-    <tr><td>10</td><td>0.1030</td><td>0.0788</td></tr>
+    <tr><td>No normalization</td><td>$5.3\times10^{9}$</td><td>11.5 px</td><td>22.4 px</td></tr>
+    <tr><td>With normalization</td><td>$4.3$</td><td>5.1 px</td><td>10.3 px</td></tr>
   </tbody>
 </table>
 
-By epoch 10, the constant-learning-rate model matches the scheduled model's sample quality. Epoch 5 has faint background speckle, while the scheduled model is cleaner; the table's last-batch losses are only indicative.
+The condition number $\kappa(A)=\sigma_{\max}/\sigma_{\min}$ (from EECS 127) tells how much input noise the least-squares solution amplifies. At $10^{9}$ the unnormalized system is nearly singular; at $4.3$ it is well conditioned.
+
+#### Correspondences and recovered homography (HMMB)
+
+The figure shows my 12 clicked correspondences on image 1 and image 2 (circles), and on the third panel the points of image 1 pushed through $H$ (crosses) with a line to the clicked target in image 2.
+
+<div class="p3-grid c1 medium">
+  <figure>
+    <img src="/images/cs180/proj4/output/A2/a2_correspondences.png" alt="Correspondences on image 1, image 2, and the reprojection of image 1 points through H" loading="lazy">
+    <figcaption>Left: points on image 1. Middle: matching points on image 2. Right: image 1 points reprojected through $H$ onto image 2</figcaption>
+  </figure>
+</div>
+
+$$
+H=\begin{bmatrix}2.73001&-0.04943&-5947.33837\\0.83506&2.65121&-2699.60734\\0.00047&0.00007&1\end{bmatrix}
+$$
+
+The reprojection errors per point range from $1.7$ to $10.3$ pixels (mean $5.1$) on photos that are about 3000 pixels tall. That is small for the image size, but larger than my A.4 sets (about $0.3$–$0.4$ px at quarter resolution). That is the translation problem from A.1 showing up: the HMMB pair is not a pure rotation, so no single homography fits all points exactly.
+
+<div class="p3-note" markdown="1">
+
+**Using the determinant and condition number as sanity checks.** $\kappa(A)$ tells me whether the *system* is trustworthy (above). The determinant of the upper-left $2\times2$ block of $H$ is a rough area-scale indicator: near $0$ means the warp collapses the image, negative means a reflection, and a very large value means a huge zoom. It is not an exact local scale, since the bottom row of $H$ also matters. For HMMB it is $7.3$, a warning sign that matches the large translation. For my good mosaics it is between $1.1$ and $1.8$ (one exception is discussed in A.4).
+
+</div>
+
+## A.3: Warp the Images
+
+#### Inverse warping
+
+Forward warping (push every source pixel to $Hx$) leaves holes. Instead, I loop over every pixel $b$ of the **output** canvas, ask where it came from in the source, and sample there:
+
+<svg viewBox="0 0 640 170" role="img" aria-label="Inverse warping: for each output pixel b, compute x = H inverse b in the source image, then sample the source" style="display:block; max-width:640px; width:100%; height:auto; margin:1.2em auto;" fill="none" stroke="currentColor" stroke-width="1.6" font-family="sans-serif" font-size="14">
+  <rect x="20" y="30" width="170" height="110" rx="6"/>
+  <text x="105" y="60" text-anchor="middle" fill="currentColor" stroke="none">source image</text>
+  <circle cx="105" cy="100" r="5" fill="currentColor"/>
+  <text x="105" y="125" text-anchor="middle" fill="currentColor" stroke="none">x (sample here)</text>
+  <polygon points="450,40 610,25 625,140 440,125" />
+  <text x="530" y="60" text-anchor="middle" fill="currentColor" stroke="none">output canvas</text>
+  <circle cx="530" cy="95" r="5" fill="currentColor"/>
+  <text x="530" y="118" text-anchor="middle" fill="currentColor" stroke="none">b (fill this pixel)</text>
+  <path d="M112 90 C 220 40, 380 40, 522 90" stroke-dasharray="5 4"/>
+  <text x="318" y="38" text-anchor="middle" fill="currentColor" stroke="none">b = H x (defines the canvas)</text>
+  <path d="M522 105 C 380 160, 220 160, 112 108"/>
+  <polygon points="112,108 124,100 126,113" fill="currentColor" stroke="none"/>
+  <text x="318" y="160" text-anchor="middle" fill="currentColor" stroke="none">x = H⁻¹ b, then divide by the third coordinate</text>
+</svg>
+
+The path is **x → b → x**: the forward map $H$ is only used to find the output bounding box, then each output pixel $b$ is mapped back with $H^{-1}$, and its color is read from the source at the (generally non-integer) location $x$:
+
+$$
+x \sim H^{-1} b,\qquad (x,y)=\left(\tfrac{x_1}{x_3},\tfrac{y_1}{x_3}\right)\ \text{where}\ (x_1,y_1,x_3)^\top=H^{-1}b .
+$$
+
+**Output size.** I push the four source corners through $H$, divide by the third coordinate, and take the min and max of the results to get the output bounding box. For mosaics and rectification the canvas can be offset (negative coordinates), so every output pixel is shifted by the box's top-left corner before applying $H^{-1}$.
+
+**Missing pixels.** Output pixels whose preimage falls outside the source get an alpha of $0$ (black, and later ignored by the blend); all others get alpha $1$.
+
+#### Two interpolation methods (both from scratch)
+
+**Nearest neighbor** rounds the source location to the closest pixel: $I_{\text{out}}(b)=I\big(\operatorname{round}(x),\operatorname{round}(y)\big)$.
+
+**Bilinear** takes a weighted average of the four surrounding pixels. With $x_0=\lfloor x\rfloor$, $y_0=\lfloor y\rfloor$, $a=x-x_0$, $b_y=y-y_0$:
+
+$$
+I(x,y)=(1-a)(1-b_y)\,I_{x_0,y_0}+a(1-b_y)\,I_{x_0+1,y_0}+(1-a)\,b_y\,I_{x_0,y_0+1}+a\,b_y\,I_{x_0+1,y_0+1}.
+$$
+
+Both are vectorized over the whole canvas at once rather than looping over pixels.
+
+#### Rectification
+
+To test the warp I rectify rectangular objects in single photos. I click the four corners of the object, order them top-left, top-right, bottom-right, bottom-left, and map them to an axis-aligned rectangle whose width and height are the average lengths of the opposite edges. The output canvas is cropped to exactly this rectangle, so only the object is shown. Four correspondences determine $H$ exactly here, which is fine because the target rectangle is exact (the instability warning only applies to noisy clicks).
+
+**Rectification 1: Berkeley campus historical landmark** (photo rotated by $90^\circ$ before clicking).
+
+<div class="p3-grid c3">
+  <figure>
+    <img src="/images/cs180/proj4/images/A3/campus.jpg" alt="Original campus landmark photo" loading="lazy">
+    <figcaption>Original</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A3/campus_nearest.png" alt="Rectified campus landmark, nearest neighbor" loading="lazy">
+    <figcaption>Nearest neighbor</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A3/campus_bilinear.png" alt="Rectified campus landmark, bilinear" loading="lazy">
+    <figcaption>Bilinear</figcaption>
+  </figure>
+</div>
+
+<div class="p3-grid c2 medium">
+  <figure>
+    <img src="/images/cs180/proj4/output/A3/campus_nearest_zoom.png" alt="Zoomed crop, nearest neighbor" loading="lazy">
+    <figcaption>Zoom: nearest neighbor</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A3/campus_bilinear_zoom.png" alt="Zoomed crop, bilinear" loading="lazy">
+    <figcaption>Zoom: bilinear</figcaption>
+  </figure>
+</div>
+
+**Rectification 2: US Embassy in South Korea.**
+
+<div class="p3-grid c3">
+  <figure>
+    <img src="/images/cs180/proj4/images/A3/embassy.jpg" alt="Original embassy photo" loading="lazy">
+    <figcaption>Original</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A3/embassy_nearest.png" alt="Rectified embassy, nearest neighbor" loading="lazy">
+    <figcaption>Nearest neighbor</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A3/embassy_bilinear.png" alt="Rectified embassy, bilinear" loading="lazy">
+    <figcaption>Bilinear</figcaption>
+  </figure>
+</div>
+
+<div class="p3-grid c2 medium">
+  <figure>
+    <img src="/images/cs180/proj4/output/A3/embassy_nearest_zoom.png" alt="Zoomed crop, nearest neighbor" loading="lazy">
+    <figcaption>Zoom: nearest neighbor</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A3/embassy_bilinear_zoom.png" alt="Zoomed crop, bilinear" loading="lazy">
+    <figcaption>Zoom: bilinear</figcaption>
+  </figure>
+</div>
+
+**Rectification 3: California Nursery Company poster.**
+
+<div class="p3-grid c3">
+  <figure>
+    <img src="/images/cs180/proj4/images/A3/nursery.jpg" alt="Original nursery poster photo" loading="lazy">
+    <figcaption>Original</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A3/nursery_nearest.png" alt="Rectified nursery poster, nearest neighbor" loading="lazy">
+    <figcaption>Nearest neighbor</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A3/nursery_bilinear.png" alt="Rectified nursery poster, bilinear" loading="lazy">
+    <figcaption>Bilinear</figcaption>
+  </figure>
+</div>
+
+<div class="p3-grid c2 medium">
+  <figure>
+    <img src="/images/cs180/proj4/output/A3/nursery_nearest_zoom.png" alt="Zoomed crop, nearest neighbor" loading="lazy">
+    <figcaption>Zoom: nearest neighbor</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A3/nursery_blinear_zoom.png" alt="Zoomed crop, bilinear" loading="lazy">
+    <figcaption>Zoom: bilinear</figcaption>
+  </figure>
+</div>
+
+#### Nearest neighbor vs. bilinear
+
+Nearest neighbor is the cheapest option: one rounding and one pixel lookup per output pixel. But every output pixel copies a whole source pixel, so slanted edges and thin text become jagged "staircases" and blocky detail appears wherever the warp stretches the image. Bilinear costs four lookups and a weighted sum per channel, but it blends neighbors smoothly, so edges and text look clean at the price of slightly softer detail. Both are fully vectorized, and the extra cost of bilinear was small compared with the quality gain, so I use bilinear for everything in A.4.
+
+## A.4: Blend the Images into a Mosaic
+
+#### Procedure
+
+1. **Correspondences and $H$.** Click 8 to 13 matching points in the overlap, then compute the normalized least-squares $H$ that maps the left image into the right image's frame. The right image stays unwarped (it is the reference).
+2. **Canvas size.** Push the left image's four corners through $H$ and combine them with the right image's corners. The bounding box of all eight is the canvas.
+3. **Warp both images** into this canvas with bilinear inverse warping (the reference image is just shifted by the canvas offset). Each gets its alpha mask.
+4. **Feather with a distance transform.** For each image, `cv2.distanceTransform` assigns every covered pixel its distance to the nearest empty pixel in that image's mask. This is $0$ at the image border and grows toward the interior, so it acts as a linear-falloff alpha. I pad the mask with a one-pixel zero border so edges that touch the canvas boundary also fall to $0$.
+5. **Weighted average.** With warped images $r_1,r_2$ and distances $d_1,d_2$:
+
+$$
+r=\frac{d_1\,r_1+d_2\,r_2}{d_1+d_2}.
+$$
+
+In the overlap both images contribute, and each fades out smoothly toward its own edge, so the seam disappears instead of showing a hard cut. Where only one image exists the formula returns that image, and where neither exists the denominator is clamped to a tiny value so the pixel stays black.
+
+**Practical issue: memory.** My original photos were so large that the full-resolution canvases made memory blow up. I shrank every image to a quarter of its resolution before computing and blending the mosaics.
+
+#### Why these photos are boring
+
+My first batch of A.4 photos was more interesting, but the stitching was bad: I rotated my arm instead of rotating the camera about its own axis, so the morning photos had far too much translation and not just rotation (see the note in A.1). So you now get to enjoy plain photos of Blackwell Residence Hall and pictures I re-shot on campus the next morning.
+
+#### Mosaic 1: Wheeler Hall
+
+<div class="p3-grid c3">
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/wheeler_left.jpg" alt="Wheeler left source" loading="lazy">
+    <figcaption>Source (left)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/wheeler_right.jpg" alt="Wheeler right source" loading="lazy">
+    <figcaption>Source (right, reference)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A4/wheeler.jpg" alt="Wheeler mosaic" loading="lazy">
+    <figcaption>Mosaic</figcaption>
+  </figure>
+</div>
+
+#### Mosaic 2: Moffitt Library
+
+<div class="p3-grid c3">
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/moffit_left.jpg" alt="Moffitt left source" loading="lazy">
+    <figcaption>Source (left)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/moffit_right.jpg" alt="Moffitt right source" loading="lazy">
+    <figcaption>Source (right, reference)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A4/moffitt.jpg" alt="Moffitt mosaic" loading="lazy">
+    <figcaption>Mosaic</figcaption>
+  </figure>
+</div>
+
+#### Mosaic 3: Martinez
+
+<div class="p3-grid c3">
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/martinez_left.jpg" alt="Martinez left source" loading="lazy">
+    <figcaption>Source (left)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/martinez_right.jpg" alt="Martinez right source" loading="lazy">
+    <figcaption>Source (right, reference)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A4/martinez.jpg" alt="Martinez mosaic" loading="lazy">
+    <figcaption>Mosaic</figcaption>
+  </figure>
+</div>
+
+#### Extra mosaics: Blackwell Residence Hall
+
+The hallway pair is a vertical mosaic (up and down views), and the stairs are left/right.
+
+<div class="p3-grid c3">
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/hallway_up.jpg" alt="Hallway up source" loading="lazy">
+    <figcaption>Hallway, source (up)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/hallway_down.jpg" alt="Hallway down source" loading="lazy">
+    <figcaption>Hallway, source (down)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A4/extras/blackwell/hallway.jpg" alt="Hallway mosaic" loading="lazy">
+    <figcaption>Hallway mosaic</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/stairs_left.jpg" alt="Stairs left source" loading="lazy">
+    <figcaption>Stairs, source (left)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/stairs_right.jpg" alt="Stairs right source" loading="lazy">
+    <figcaption>Stairs, source (right)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A4/extras/blackwell/stairs.jpg" alt="Stairs mosaic" loading="lazy">
+    <figcaption>Stairs mosaic</figcaption>
+  </figure>
+</div>
+
+#### Extra mosaics: campus photos from the next morning
+
+<div class="p3-grid c3">
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/tower_left.jpg" alt="Campanile left source" loading="lazy">
+    <figcaption>Campanile, source (left)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/tower_right.jpg" alt="Campanile right source" loading="lazy">
+    <figcaption>Campanile, source (right)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A4/extras/campus_photos/tower.jpg" alt="Campanile mosaic" loading="lazy">
+    <figcaption>Campanile mosaic</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/sproul_left.jpg" alt="Upper Sproul left source" loading="lazy">
+    <figcaption>Upper Sproul, source (left)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/sproul_right.jpg" alt="Upper Sproul right source" loading="lazy">
+    <figcaption>Upper Sproul, source (right)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A4/extras/campus_photos/upper_sproul.jpg" alt="Upper Sproul mosaic" loading="lazy">
+    <figcaption>Upper Sproul mosaic</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/gate_left.jpg" alt="Sather Gate left source" loading="lazy">
+    <figcaption>Sather Gate, source (left)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/images/A4/gate_right.jpg" alt="Sather Gate right source" loading="lazy">
+    <figcaption>Sather Gate, source (right)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A4/extras/campus_photos/sather_gate.jpg" alt="Sather Gate mosaic" loading="lazy">
+    <figcaption>Sather Gate mosaic</figcaption>
+  </figure>
+</div>
+
+#### Fit quality of the mosaic homographies
+
+Errors are in pixels at the quarter-resolution used for blending.
+
+<table class="p3-table" style="width:auto; display:table; margin:1em auto;">
+  <thead><tr><th>Set</th><th>mean reprojection error</th><th>$\det H_{[1:2,1:2]}$</th></tr></thead>
+  <tbody>
+    <tr><td>Wheeler</td><td>0.34 px</td><td>1.46</td></tr>
+    <tr><td>Moffitt</td><td>0.43 px</td><td>8.14</td></tr>
+    <tr><td>Campanile</td><td>0.32 px</td><td>1.65</td></tr>
+    <tr><td>Upper Sproul</td><td>0.42 px</td><td>1.83</td></tr>
+    <tr><td>Sather Gate</td><td>0.34 px</td><td>1.09</td></tr>
+  </tbody>
+</table>
+
+All of these are well under a pixel, which is why the seams are hard to see. Moffitt stands out with a determinant of $8.1$: its two views differ a lot in perspective, so the warp is strong and the left image is visibly stretched in the mosaic. The error is still low because the points fit the homography well; the large determinant just tells me the warp is strong.
+
+#### What still goes wrong
+
+- **Ghosting and wedges** appear where the photos are not related by a pure rotation (any remaining translation) or where people and leaves moved between shots. Distance-transform feathering cannot hide misalignment; a Laplacian pyramid would reduce ghosting of high-frequency detail.
+- **Exposure differences** between the two photos show up as a soft brightness gradient across the overlap.
+- **Click error** of a couple of pixels changes the homography noticeably, which is why I used more than four correspondences, spread across the overlap, and normalized them.
+
+## Conclusion
+
+The most important thing I learned is that the math is only half of the project; the data matters just as much. A homography assumes a pure rotation about the camera center, and when I rotated my arm instead of the camera, no amount of careful least squares could fix the mosaics. On the math side, normalizing the points reduced $\kappa(A)$ from about $10^{9}$ to about $4$ and halved the reprojection error, and the determinant of $H$ and $\kappa(A)$ from EECS 127 turned out to be quick ways to judge whether a recovered system is trustworthy. Inverse warping avoids holes, bilinear interpolation gives much cleaner results than nearest neighbor for a small cost, and distance-transform feathering gives a simple, effective way to blend.
