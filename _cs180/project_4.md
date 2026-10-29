@@ -208,6 +208,53 @@ $$
 
 Stacking $n$ correspondences gives $A\,h=b$ with $A\in\mathbb{R}^{2n\times 8}$ and $b\in\mathbb{R}^{2n}$. Four correspondences give a square system, but it is very sensitive to click error. I used **8 to 13** correspondences per pair (12 for HMMB, so $A$ is $24\times8$) and solve the overdetermined system by least squares, $\hat h=\arg\min_h\|Ah-b\|_2^2$. More correspondences average out click noise, so more is better.
 
+#### The system of equations (HMMB)
+
+For one correspondence, e.g. correspondence 1, $(x,y)=(2348,2614)\mapsto(x',y')=(149,2707)$, the two rows are
+
+$$
+\begin{bmatrix}2348&2614&1&0&0&0&-349852&-389486\\0&0&0&2348&2614&1&-6356036&-7076098\end{bmatrix}
+\begin{bmatrix}h_1\\\vdots\\h_8\end{bmatrix}
+=\begin{bmatrix}149\\2707\end{bmatrix}.
+$$
+
+Stacking all 12 correspondences gives the full $24\times8$ system $A\,h=b$, shown below with the raw pixel coordinates (before normalization). The entries span from $1$ to about $8.5\times10^{6}$, which is exactly the column-scale problem that gives $\kappa(A)\approx5.3\times10^{9}$. In practice I build and solve the same system on the normalized points.
+
+<details markdown="0">
+<summary>Show the full $24\times8$ system $A h=b$</summary>
+<div style="overflow-x:auto; font-size:0.8em;">
+<table class="p3-table" style="margin:1em auto;">
+<thead><tr><th>$h_1$</th><th>$h_2$</th><th>$h_3$</th><th>$h_4$</th><th>$h_5$</th><th>$h_6$</th><th>$h_7$</th><th>$h_8$</th><th>$b$</th></tr></thead>
+<tbody>
+<tr><td>2&#8201;348</td><td>2&#8201;614</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-349&#8201;852</td><td>-389&#8201;486</td><td>149</td></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>2&#8201;348</td><td>2&#8201;614</td><td>1</td><td>-6&#8201;356&#8201;036</td><td>-7&#8201;076&#8201;098</td><td>2&#8201;707</td></tr>
+<tr><td>2&#8201;341</td><td>2&#8201;365</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-341&#8201;786</td><td>-345&#8201;290</td><td>146</td></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>2&#8201;341</td><td>2&#8201;365</td><td>1</td><td>-5&#8201;697&#8201;994</td><td>-5&#8201;756&#8201;410</td><td>2&#8201;434</td></tr>
+<tr><td>2&#8201;453</td><td>2&#8201;614</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-667&#8201;216</td><td>-711&#8201;008</td><td>272</td></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>2&#8201;453</td><td>2&#8201;614</td><td>1</td><td>-6&#8201;601&#8201;023</td><td>-7&#8201;034&#8201;274</td><td>2&#8201;691</td></tr>
+<tr><td>2&#8201;450</td><td>2&#8201;337</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-649&#8201;250</td><td>-619&#8201;305</td><td>265</td></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>2&#8201;450</td><td>2&#8201;337</td><td>1</td><td>-5&#8201;865&#8201;300</td><td>-5&#8201;594&#8201;778</td><td>2&#8201;394</td></tr>
+<tr><td>2&#8201;387</td><td>2&#8201;819</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-432&#8201;047</td><td>-510&#8201;239</td><td>181</td></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>2&#8201;387</td><td>2&#8201;819</td><td>1</td><td>-6&#8201;960&#8201;492</td><td>-8&#8201;220&#8201;204</td><td>2&#8201;916</td></tr>
+<tr><td>2&#8201;387</td><td>2&#8201;871</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-432&#8201;047</td><td>-519&#8201;651</td><td>181</td></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>2&#8201;387</td><td>2&#8201;871</td><td>1</td><td>-7&#8201;084&#8201;616</td><td>-8&#8201;521&#8201;128</td><td>2&#8201;968</td></tr>
+<tr><td>2&#8201;555</td><td>2&#8201;831</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-947&#8201;905</td><td>-1&#8201;050&#8201;301</td><td>371</td></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>2&#8201;555</td><td>2&#8201;831</td><td>1</td><td>-7&#8201;389&#8201;060</td><td>-8&#8201;187&#8201;252</td><td>2&#8201;892</td></tr>
+<tr><td>2&#8201;569</td><td>2&#8201;884</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-978&#8201;789</td><td>-1&#8201;098&#8201;804</td><td>381</td></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>2&#8201;569</td><td>2&#8201;884</td><td>1</td><td>-7&#8201;552&#8201;860</td><td>-8&#8201;478&#8201;960</td><td>2&#8201;940</td></tr>
+<tr><td>2&#8201;619</td><td>2&#8201;643</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-1&#8201;165&#8201;455</td><td>-1&#8201;176&#8201;135</td><td>445</td></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>2&#8201;619</td><td>2&#8201;643</td><td>1</td><td>-7&#8201;058&#8201;205</td><td>-7&#8201;122&#8201;885</td><td>2&#8201;695</td></tr>
+<tr><td>2&#8201;650</td><td>2&#8201;659</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-1&#8201;279&#8201;950</td><td>-1&#8201;284&#8201;297</td><td>483</td></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>2&#8201;650</td><td>2&#8201;659</td><td>1</td><td>-7&#8201;131&#8201;150</td><td>-7&#8201;155&#8201;369</td><td>2&#8201;691</td></tr>
+<tr><td>2&#8201;612</td><td>2&#8201;554</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-1&#8201;144&#8201;056</td><td>-1&#8201;118&#8201;652</td><td>438</td></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>2&#8201;612</td><td>2&#8201;554</td><td>1</td><td>-6&#8201;775&#8201;528</td><td>-6&#8201;625&#8201;076</td><td>2&#8201;594</td></tr>
+<tr><td>2&#8201;661</td><td>2&#8201;554</td><td>1</td><td>0</td><td>0</td><td>0</td><td>-1&#8201;285&#8201;263</td><td>-1&#8201;233&#8201;582</td><td>483</td></tr>
+<tr><td>0</td><td>0</td><td>0</td><td>2&#8201;661</td><td>2&#8201;554</td><td>1</td><td>-6&#8201;891&#8201;990</td><td>-6&#8201;614&#8201;860</td><td>2&#8201;590</td></tr>
+</tbody>
+</table>
+</div>
+</details>
+
 #### Why I normalize the points first
 
 Without normalization, least squares did not work well. Pixel coordinates are in the thousands, so the columns holding $x'x$ and $x'y$ are around $10^6$–$10^7$ while the column of ones is $1$. Points with large $x,y$ dominate the residual, and the solution is wrecked by the huge difference in column scales. My points were also tightly clustered in one corner of the image, which makes things worse.
@@ -305,11 +352,11 @@ To test the warp I rectify rectangular objects in single photos. I click the fou
 
 <div class="p3-grid c3">
   <figure>
-  <div style="position:relative; aspect-ratio:3/4; overflow:hidden;">
-    <img src="/images/cs180/proj4/images/A3/campus.jpg" alt="Original campus landmark photo" loading="lazy" style="position:absolute; top:50%; left:50%; width:133.333%; max-width:none; height:auto; transform:translate(-50%,-50%) rotate(-90deg);">
-  </div>
-  <figcaption>Original</figcaption>
-</figure>
+    <div style="position:relative; aspect-ratio:3/4; overflow:hidden;">
+      <img src="/images/cs180/proj4/images/A3/campus.jpg" alt="Original campus landmark photo" loading="lazy" style="position:absolute; top:50%; left:50%; width:133.333%; max-width:none; height:auto; transform:translate(-50%,-50%) rotate(-90deg);">
+    </div>
+    <figcaption>Original</figcaption>
+  </figure>
   <figure>
     <img src="/images/cs180/proj4/output/A3/campus_nearest.png" alt="Rectified campus landmark, nearest neighbor" loading="lazy">
     <figcaption>Nearest neighbor</figcaption>
@@ -382,7 +429,7 @@ To test the warp I rectify rectangular objects in single photos. I click the fou
     <figcaption>Zoom: nearest neighbor</figcaption>
   </figure>
   <figure>
-    <img src="/images/cs180/proj4/output/A3/nursery_blinear_zoom.png" alt="Zoomed crop, bilinear" loading="lazy">
+    <img src="/images/cs180/proj4/output/A3/nursery_bilinear_zoom.png" alt="Zoomed crop, bilinear" loading="lazy">
     <figcaption>Zoom: bilinear</figcaption>
   </figure>
 </div>
