@@ -1,5 +1,5 @@
 ---
-title: "Project 4A: Image Warping and Mosaicing"
+title: "Project 4: Image Warping and Mosaicing"
 collection: cs180
 permalink: /cs180/project_4/
 date: 2026-10-28
