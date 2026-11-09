@@ -717,7 +717,7 @@ The ratio test comes from the observation in the MOPS paper (following Lowe) tha
 5. **Refit** $H$ on all inliers with the normalized least squares from A.2.
 6. **Warp and blend** with the bilinear warp and distance-transform feathering from A.4, at quarter resolution.
 
-A single outlier can ruin a least-squares fit, but it can only ruin a RANSAC *sample*, and a bad sample simply gets few inliers and loses. Some samples are degenerate (nearly collinear points), so $H$ sends points to infinity and NumPy warns about a divide by zero. Those samples get zero inliers, so they are discarded without harm. One thing I found interesting is that running 2000 iterations at random is sufficient to find the best 4 point fit. We don't need to go through all possible combinations of picking 4 matching points. Probability theory would cover it. 
+A single outlier can ruin a least-squares fit, but it can only ruin a RANSAC *sample*, and a bad sample simply gets few inliers and loses. Some samples are degenerate (nearly collinear points), so $H$ sends points to infinity and NumPy warns about a divide by zero. Those samples get zero inliers, so they are discarded without harm. One thing I found interesting is that running 2000 iterations at random is sufficient to find the best 4 point fit. We don't need to go through all possible combinations of picking 4 matching points. Probability theory guarantees we would get a good 4-point match in high chance. 
 
 #### Manual vs. automatic
 
@@ -753,11 +753,11 @@ A single outlier can ruin a least-squares fit, but it can only ruin a RANSAC *sa
   </tbody>
 </table>
 
-For Wheeler the automatic and manual homographies are nearly identical (determinant $1.45$ vs. $1.46$), and the mosaics are hard to tell apart. The automatic error is higher in every row, but it is measured on different points, and RANSAC accepts anything under 3 px by design.
+For Wheeler the automatic and manual homographies are nearly identical (determinant $1.45$ vs. $1.46$), and the mosaics are hard to tell apart. The automatic error is higher in every row and RANSAC accepts anything under 3 px by design.
 
-Moffitt is the hard case. Only 18 matches survive, most likely because the ceiling is a repeating grid that the ratio test throws out. With so few points the warp is even stronger than the manual one ($11.2$ vs. $8.1$) and the left image is stretched further.
+Moffitt is the hard case. Only 18 matches survive, most likely because the ceiling is a repeating grid that the ratio test throws out. With so few points the warp is even stronger than the manual one ($11.2$ vs. $8.1$) and the right image is stretched further.
 
-For both HMMB pairs, RANSAC rejects a few matches (6 of 33 and 3 of 49), which are the outliers the ratio test let through. The automatic and manual determinants are close, so both methods find a similar warp. These are pairs where I rotated my arm instead of the phone (see A.1), so the manual mosaics went into my "not so good" folder. Automatic matching cannot fix that problem, because the parallax is in the photos themselves.
+For both HMMB pairs, RANSAC rejects a few matches (6 of 33 and 3 of 49), which are the outliers the ratio test let through. The automatic and manual determinants are close, so both methods find a similar warp. These are pairs where I rotated my arm instead of the phone (see A.1). Automatic matching cannot fix that problem, because the parallax is in the photos themselves.
 
 <div class="p3-grid c2">
   <figure>
