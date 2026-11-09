@@ -749,6 +749,9 @@ A single outlier can ruin a least-squares fit, but it can only ruin a RANSAC *sa
     <tr><td>Moffitt</td><td>18</td><td>18</td><td>1.08 / 0.43 px</td><td>11.17 / 8.14</td></tr>
     <tr><td>HMMB 1</td><td>33</td><td>27</td><td>0.72 / 0.46 px</td><td>4.74 / 5.19</td></tr>
     <tr><td>HMMB 2</td><td>49</td><td>46</td><td>0.91 / 0.76 px</td><td>2.74 / 2.28</td></tr>
+    <tr><td>Campanile</td><td>67</td><td>66</td><td>0.71 / 0.32 px</td><td>1.56 / 1.65</td></tr>
+    <tr><td>Upper Sproul</td><td>52</td><td>51</td><td>0.57 / 0.42 px</td><td>1.80 / 1.83</td></tr>
+    <tr><td>Sather Gate</td><td>90</td><td>88</td><td>0.73 / 0.34 px</td><td>1.14 / 1.09</td></tr>
   </tbody>
 </table>
 
@@ -793,6 +796,37 @@ For both HMMB pairs, RANSAC rejects a few matches (6 of 33 and 3 of 49), which a
   <figure>
     <img src="/images/cs180/proj4/images/B/hearst_2_right.jpg" alt="HMMB 2 right source" loading="lazy">
     <figcaption>HMMB 2, source (right)</figcaption>
+  </figure>
+</div>
+
+#### More automatic mosaics: campus photos
+
+On the campus pairs from the next morning, almost every match survives RANSAC (66 of 67, 51 of 52 and 88 of 90), and the automatic determinants are within a few percent of the manual ones. These photos have plenty of distinct corners and little repeated texture, so the pipeline matches my hand clicks without any effort.
+
+<div class="p3-grid c2">
+  <figure>
+    <img src="/images/cs180/proj4/output/A4/extras/campus_photos/tower.jpg" alt="Campanile mosaic from manual correspondences" loading="lazy">
+    <figcaption>Campanile, manual (Part A)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/B4/tower_auto.jpg" alt="Campanile mosaic from automatic correspondences" loading="lazy">
+    <figcaption>Campanile, automatic</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A4/extras/campus_photos/upper_sproul.jpg" alt="Upper Sproul mosaic from manual correspondences" loading="lazy">
+    <figcaption>Upper Sproul, manual (Part A)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/B4/plaza_auto.jpg" alt="Upper Sproul mosaic from automatic correspondences" loading="lazy">
+    <figcaption>Upper Sproul, automatic</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A4/extras/campus_photos/sather_gate.jpg" alt="Sather Gate mosaic from manual correspondences" loading="lazy">
+    <figcaption>Sather Gate, manual (Part A)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/B4/gate_auto.jpg" alt="Sather Gate mosaic from automatic correspondences" loading="lazy">
+    <figcaption>Sather Gate, automatic</figcaption>
   </figure>
 </div>
 
