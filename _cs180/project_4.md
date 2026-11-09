@@ -154,9 +154,13 @@ window.MathJax = {
 
 ## Overview
 
-In this project I recover homographies from hand-clicked correspondences, warp images with inverse warping (nearest neighbor and bilinear, both written from scratch), rectify planar objects, and blend overlapping photos into mosaics with distance-transform feathering. Everything is done in homogeneous coordinates with only NumPy for linear algebra; no `cv2.findHomography` or `cv2.warpPerspective`.
+**Part A.** I recover homographies from hand-clicked correspondences, warp images with inverse warping (nearest neighbor and bilinear, both written from scratch), rectify planar objects, and blend overlapping photos into mosaics with distance-transform feathering.
 
-Convention used throughout: the origin $(0,0)$ is the **top-left** pixel, $x$ is the column (increasing to the right), $y$ is the row (increasing downward), and images are read from top-left to bottom-right. In NumPy an image is indexed as `im[y, x]`.
+**Part B.** I remove the clicking. Harris corners are thinned with adaptive non-maximal suppression (ANMS), described by normalized $8\times8$ patches, matched with a nearest-neighbor ratio test, and filtered with 4-point RANSAC to get a robust homography. The result is a fully automatic stitcher, following the MOPS paper by Brown, Szeliski and Winder ([Multi-Image Matching using Multi-Scale Oriented Patches](https://cal-cs180.github.io/fa26/hw/proj3/Papers/MOPS.pdf), CVPR 2005).
+
+Everything is done in homogeneous coordinates with only NumPy for linear algebra; no `cv2.findHomography`, `cv2.warpPerspective`, or OpenCV feature matchers.
+
+Convention: the origin $(0,0)$ is the **top-left** pixel, $x$ is the column (increasing to the right), $y$ is the row (increasing downward), and images are read from top-left to bottom-right. In NumPy an image is indexed as `im[y, x]`. Warping and homographies use $(x, y)$. In Part B the corner detector returns points as $(y, x)$ (row, column), so I store them that way and flip to $(x, y)$ only right before computing $H$. Each section says which order it uses.
 
 ## A.1: Shoot the Pictures
 
@@ -173,14 +177,10 @@ A homography only relates two photos exactly when the camera **rotates about its
 
 **Set 2: Wheeler Hall.** A second left/right pair with a fixed viewpoint. All of my other pairs (Martinez, Moffitt, Blackwell hallway and stairs, Campanile, Upper Sproul, Sather Gate) are shown with their mosaics in A.4.
 
-<div class="p3-grid c2 medium">
+<div class="p3-grid c1 medium">
   <figure>
-    <img src="/images/cs180/proj4/images/A4/wheeler_left.jpg" alt="Wheeler Hall, left photo" loading="lazy">
-    <figcaption>Set 2: Wheeler Hall, left</figcaption>
-  </figure>
-  <figure>
-    <img src="/images/cs180/proj4/images/A4/wheeler_right.jpg" alt="Wheeler Hall, right photo" loading="lazy">
-    <figcaption>Set 2: Wheeler Hall, right</figcaption>
+    <img src="/images/cs180/proj4/output/A1/wheeler_rotation.png" alt="Wheeler Hall taken from the left and right side" loading="lazy">
+    <figcaption>Set 2: Wheeler Hall, taken from the left and from the right</figcaption>
   </figure>
 </div>
 
@@ -328,6 +328,8 @@ $$
 x \sim H^{-1} b,\qquad (x,y)=\left(\tfrac{x_1}{x_3},\tfrac{y_1}{x_3}\right)\ \text{where}\ (x_1,y_1,x_3)^\top=H^{-1}b .
 $$
 
+**Vectorizing the loop.** My first version used two nested `for` loops over the rows and columns of the canvas, which was slow at these image sizes. I replaced them with `np.meshgrid`, which builds the $(x, y)$ coordinates of every output pixel at once. Stacking them with a row of ones gives a single $3\times(H_{\text{out}}W_{\text{out}})$ matrix $B$, so the whole inverse map is one matrix product $H^{-1}B$ followed by one division by the third row.
+
 **Output size.** I push the four source corners through $H$, divide by the third coordinate, and take the min and max of the results to get the output bounding box. For mosaics and rectification the canvas can be offset (negative coordinates), so every output pixel is shifted by the box's top-left corner before applying $H^{-1}$.
 
 **Missing pixels.** Output pixels whose preimage falls outside the source get an alpha of $0$ (black, and later ignored by the blend); all others get alpha $1$.
@@ -342,7 +344,7 @@ $$
 I(x,y)=(1-a)(1-b_y)\,I_{x_0,y_0}+a(1-b_y)\,I_{x_0+1,y_0}+(1-a)\,b_y\,I_{x_0,y_0+1}+a\,b_y\,I_{x_0+1,y_0+1}.
 $$
 
-Both are vectorized over the whole canvas at once rather than looping over pixels.
+Both use the meshgrid coordinates above, so they run over the whole canvas at once rather than looping over pixels.
 
 #### Rectification
 
@@ -606,6 +608,196 @@ All of these are well under a pixel, which is why the seams are hard to see. Mof
 - **Exposure differences** between the two photos show up as a soft brightness gradient across the overlap.
 - **Click error** of a couple of pixels changes the homography noticeably, which is why I used more than four correspondences, spread across the overlap, and normalized them.
 
+## Part B: Feature Matching for Autostitching
+
+Clicking 8 to 13 points per pair was the slowest and most error-prone step of Part A. Part B replaces it with a pipeline from the MOPS paper ([Brown et al., 2005](https://cal-cs180.github.io/fa26/hw/proj3/Papers/MOPS.pdf)), and everything after $H$ (warping and blending) is reused from Part A.
+
+<svg viewBox="0 0 640 120" role="img" aria-label="Autostitching pipeline: Harris corners, ANMS, 8 by 8 descriptors, ratio-test matching, RANSAC, warp and blend" style="display:block; max-width:640px; width:100%; height:auto; margin:1.2em auto;" fill="none" stroke="currentColor" stroke-width="1.6" font-family="sans-serif" font-size="12">
+  <defs><marker id="p4arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" stroke="none"/></marker></defs>
+  <rect x="2" y="30" width="88" height="56" rx="6"/>
+  <text x="46" y="54" text-anchor="middle" fill="currentColor" stroke="none">Harris</text>
+  <text x="46" y="70" text-anchor="middle" fill="currentColor" stroke="none">corners</text>
+  <rect x="110" y="30" width="88" height="56" rx="6"/>
+  <text x="154" y="54" text-anchor="middle" fill="currentColor" stroke="none">strong +</text>
+  <text x="154" y="70" text-anchor="middle" fill="currentColor" stroke="none">ANMS</text>
+  <rect x="218" y="30" width="88" height="56" rx="6"/>
+  <text x="262" y="54" text-anchor="middle" fill="currentColor" stroke="none">8×8</text>
+  <text x="262" y="70" text-anchor="middle" fill="currentColor" stroke="none">descriptors</text>
+  <rect x="326" y="30" width="88" height="56" rx="6"/>
+  <text x="370" y="54" text-anchor="middle" fill="currentColor" stroke="none">ratio-test</text>
+  <text x="370" y="70" text-anchor="middle" fill="currentColor" stroke="none">matching</text>
+  <rect x="434" y="30" width="88" height="56" rx="6"/>
+  <text x="478" y="54" text-anchor="middle" fill="currentColor" stroke="none">RANSAC</text>
+  <text x="478" y="70" text-anchor="middle" fill="currentColor" stroke="none">→ H</text>
+  <rect x="542" y="30" width="96" height="56" rx="6" stroke-dasharray="5 4"/>
+  <text x="590" y="54" text-anchor="middle" fill="currentColor" stroke="none">warp + blend</text>
+  <text x="590" y="70" text-anchor="middle" fill="currentColor" stroke="none">(Part A)</text>
+  <path d="M90 58 H108" marker-end="url(#p4arr)"/>
+  <path d="M198 58 H216" marker-end="url(#p4arr)"/>
+  <path d="M306 58 H324" marker-end="url(#p4arr)"/>
+  <path d="M414 58 H432" marker-end="url(#p4arr)"/>
+  <path d="M522 58 H540" marker-end="url(#p4arr)"/>
+  <text x="208" y="108" text-anchor="middle" fill="currentColor" stroke="none">B.1 – B.2: run on each image separately</text>
+  <text x="478" y="108" text-anchor="middle" fill="currentColor" stroke="none">B.3 – B.4: run on the pair</text>
+</svg>
+
+## B.1: Harris Corner Detection
+
+#### Workflow
+
+1. **Grayscale** the image and compute the Harris response $h$ at every pixel ($\sigma=1$).
+2. **Local maxima** of $h$ become candidate corners; anything within 20 px of the border is discarded, since a descriptor window would not fit there. Points are stored as $(y, x)$, i.e. (row, column).
+3. **Strong-corner threshold.** Keep only corners with $h > 0.01\,\max h$.
+4. **ANMS.** For each corner, find its suppression radius (below) and keep the 500 corners with the largest radius.
+
+For corner $i$ with strength $f_i$, the suppression radius is the distance to the nearest corner that is clearly stronger:
+
+$$
+r_i=\min_j \|\mathbf{x}_i-\mathbf{x}_j\|\quad\text{s.t.}\quad f_i < c_{\text{robust}}\,f_j,\qquad c_{\text{robust}}=0.9.
+$$
+
+**Why the strong-corner threshold is needed.** Almost every textured pixel is a local maximum of $h$, so without a threshold the image is filled with corners: brick, floor tiles and noise all qualify. That buries the real corners, and it also makes ANMS slow because it compares every corner against every other one. The threshold leaves 14,860 corners on this photo.
+
+**Why ANMS.** Even after the threshold, the strongest corners cluster on high-contrast spots (the lamps, the railings, the skylight). Taking the top 500 by strength would put most of them there. ANMS keeps a corner only if it is the strongest in a large neighborhood, so the 500 survivors are spread evenly across the image, which gives the homography much better coverage.
+
+<div class="p3-grid c1">
+  <figure>
+    <img src="/images/cs180/proj4/output/B1/comparison.png" alt="Harris corners before and after ANMS on the HMMB atrium" loading="lazy">
+    <figcaption>Left: 14,860 strong Harris corners. Right: the 500 corners kept by ANMS</figcaption>
+  </figure>
+</div>
+
+## B.2: Feature Descriptor Extraction
+
+#### Workflow
+
+1. **Blur** the grayscale image with a Gaussian ($\sigma=2$) so subsampling does not alias.
+2. **Window.** Take an axis-aligned $40\times40$ window centered on each ANMS corner.
+3. **Subsample** every 5th pixel to get an $8\times8$ patch.
+4. **Bias/gain normalize**: subtract the patch mean and divide by its standard deviation, so a brighter or higher-contrast copy of the same patch gives the same descriptor.
+5. **Flatten** to a 64-dimensional vector for matching.
+
+Sampling a large window coarsely makes the descriptor depend on the overall structure around a corner rather than on exact pixel values, so it tolerates small localization errors. My descriptors are single-scale and not rotation invariant, which is fine here because each pair is taken at roughly the same zoom and orientation.
+
+The figure shows eight descriptors from the HMMB photo (ANMS with $n=8$). Titles are written as $(x, y)$ for readability even though the corners are stored as $(y, x)$.
+
+<div class="p3-grid c1 medium">
+  <figure>
+    <img src="/images/cs180/proj4/output/B2/eight_descriptor.png" alt="Eight normalized 8x8 feature descriptors" loading="lazy">
+    <figcaption>Eight normalized $8\times8$ descriptors, labeled by corner location $(x, y)$</figcaption>
+  </figure>
+</div>
+
+## B.3: Feature Matching
+
+#### Workflow
+
+1. **Detect** 500 ANMS corners and their descriptors in each image (B.1 and B.2).
+2. **Distance matrix.** Compute all $500\times500$ Euclidean distances between descriptors of image 1 and image 2 in one call, with no loops.
+3. **Two nearest neighbors.** For each descriptor in image 1, find its closest ($d_1$) and second-closest ($d_2$) descriptor in image 2.
+4. **Ratio test.** Accept the match only if $d_1/d_2<0.5$.
+
+The ratio test comes from the observation in the MOPS paper (following Lowe) that $d_1$ alone separates correct and wrong matches poorly, but comparing it with $d_2$ works well. A correct match is much closer than any other candidate; a wrong one has a runner-up that is almost as close. A side effect is that repeated textures (windows, grids, railings) are mostly thrown out, because every copy looks alike and the ratio is near 1.
+
+On the HMMB pair this leaves 16 matches. Most are correct, but match 8 clearly is not: a point on the left floor is matched to the middle of the right image. That is exactly the kind of outlier RANSAC must remove.
+
+<div class="p3-grid c1">
+  <figure>
+    <img src="/images/cs180/proj4/output/B3/feature_match.png" alt="16 feature matches between the left and right HMMB photos" loading="lazy">
+    <figcaption>Matches surviving the ratio test on the HMMB pair (match 8 is an outlier)</figcaption>
+  </figure>
+</div>
+
+## B.4: RANSAC for Robust Homography
+
+#### Workflow
+
+1. **Matched points** from B.3 are flipped from $(y, x)$ to $(x, y)$, since $H$ and the warp use $(x, y)$.
+2. **Sample** 4 matches at random and compute the exact homography through them.
+3. **Score** it: a match is an inlier if $H$ maps it within $\varepsilon=3$ px of its partner.
+4. **Repeat** 2000 times and keep the largest inlier set.
+5. **Refit** $H$ on all inliers with the normalized least squares from A.2.
+6. **Warp and blend** with the bilinear warp and distance-transform feathering from A.4, at quarter resolution.
+
+A single outlier can ruin a least-squares fit, but it can only ruin a RANSAC *sample*, and a bad sample simply gets few inliers and loses. Some samples are degenerate (nearly collinear points), so $H$ sends points to infinity and NumPy warns about a divide by zero. Those samples get zero inliers, so they are discarded without harm.
+
+#### Manual vs. automatic
+
+<div class="p3-grid c2">
+  <figure>
+    <img src="/images/cs180/proj4/output/A4/wheeler.jpg" alt="Wheeler mosaic from manual correspondences" loading="lazy">
+    <figcaption>Wheeler, manual (Part A)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/B4/wheeler_auto.jpg" alt="Wheeler mosaic from automatic correspondences" loading="lazy">
+    <figcaption>Wheeler, automatic</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A4/moffitt.jpg" alt="Moffitt mosaic from manual correspondences" loading="lazy">
+    <figcaption>Moffitt, manual (Part A)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/B4/moffit_auto.jpg" alt="Moffitt mosaic from automatic correspondences" loading="lazy">
+    <figcaption>Moffitt, automatic</figcaption>
+  </figure>
+</div>
+
+<table class="p3-table" style="width:auto; display:table; margin:1em auto;">
+  <thead><tr><th>Set</th><th>matches</th><th>inliers</th><th>mean error (auto / manual)</th><th>$\det H_{[1:2,1:2]}$ (auto / manual)</th></tr></thead>
+  <tbody>
+    <tr><td>Wheeler</td><td>93</td><td>82</td><td>1.03 / 0.34 px</td><td>1.45 / 1.46</td></tr>
+    <tr><td>Moffitt</td><td>18</td><td>18</td><td>1.08 / 0.43 px</td><td>11.17 / 8.14</td></tr>
+    <tr><td>HMMB 1</td><td>33</td><td>27</td><td>0.72 / 0.46 px</td><td>4.74 / 5.19</td></tr>
+    <tr><td>HMMB 2</td><td>49</td><td>46</td><td>0.91 / 0.76 px</td><td>2.74 / 2.28</td></tr>
+  </tbody>
+</table>
+
+For Wheeler the automatic and manual homographies are nearly identical (determinant $1.45$ vs. $1.46$), and the mosaics are hard to tell apart. The automatic error is higher in every row, but it is measured on different points, and RANSAC accepts anything under 3 px by design.
+
+Moffitt is the hard case. Only 18 matches survive, most likely because the ceiling is a repeating grid that the ratio test throws out. With so few points the warp is even stronger than the manual one ($11.2$ vs. $8.1$) and the left image is stretched further.
+
+For both HMMB pairs, RANSAC rejects a few matches (6 of 33 and 3 of 49), which are the outliers the ratio test let through. The automatic and manual determinants are close, so both methods find a similar warp. These are pairs where I rotated my arm instead of the phone (see A.1), so the manual mosaics went into my "not so good" folder. Automatic matching cannot fix that problem, because the parallax is in the photos themselves.
+
+<div class="p3-grid c2">
+  <figure>
+    <img src="/images/cs180/proj4/output/A4/not_so_good/hmmb_blend.jpg" alt="HMMB 1 mosaic from manual correspondences" loading="lazy">
+    <figcaption>HMMB 1, manual (Part A)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/B4/hearst_auto.jpg" alt="HMMB 1 mosaic from automatic correspondences" loading="lazy">
+    <figcaption>HMMB 1, automatic</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/A4/not_so_good/hmmb_2_blend.jpg" alt="HMMB 2 mosaic from manual correspondences" loading="lazy">
+    <figcaption>HMMB 2, manual (Part A)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/output/B4/hearst_2_auto.jpg" alt="HMMB 2 mosaic from automatic correspondences" loading="lazy">
+    <figcaption>HMMB 2, automatic</figcaption>
+  </figure>
+</div>
+
+<div class="p3-grid c4">
+  <figure>
+    <img src="/images/cs180/proj4/images/B/hearst_left.jpg" alt="HMMB 1 left source" loading="lazy">
+    <figcaption>HMMB 1, source (left)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/images/B/hearst_right.jpg" alt="HMMB 1 right source" loading="lazy">
+    <figcaption>HMMB 1, source (right)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/images/B/hearst_2_left.jpg" alt="HMMB 2 left source" loading="lazy">
+    <figcaption>HMMB 2, source (left)</figcaption>
+  </figure>
+  <figure>
+    <img src="/images/cs180/proj4/images/B/hearst_2_right.jpg" alt="HMMB 2 right source" loading="lazy">
+    <figcaption>HMMB 2, source (right)</figcaption>
+  </figure>
+</div>
+
 ## Conclusion
 
 The most important thing I learned is that the math is only half of the project; the data matters just as much. A homography assumes a pure rotation about the camera center, and when I rotated my arm instead of the camera, no amount of careful least squares could fix the mosaics. On the math side, normalizing the points reduced $\kappa(A)$ from about $10^{9}$ to about $4$ and halved the reprojection error, and the determinant of $H$ and $\kappa(A)$ from EECS 127 turned out to be quick ways to judge whether a recovered system is trustworthy. Inverse warping avoids holes, bilinear interpolation gives much cleaner results than nearest neighbor for a small cost, and distance-transform feathering gives a simple, effective way to blend.
+
+Part B showed that clicking is not needed at all. A simple, hand-designed pipeline of Harris corners, ANMS, $8\times8$ patches, a ratio test and RANSAC is enough for automatic stitching, with no neural networks and no training data. Each step is easy to understand on its own. Its weak spot is repeated texture, where the ratio test leaves too few matches, as in Moffitt.
