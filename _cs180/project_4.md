@@ -697,14 +697,12 @@ The figure shows eight descriptors from the HMMB photo (ANMS with $n=8$). Titles
 3. **Two nearest neighbors.** For each descriptor in image 1, find its closest ($d_1$) and second-closest ($d_2$) descriptor in image 2.
 4. **Ratio test.** Accept the match only if $d_1/d_2<0.5$.
 
-The ratio test comes from the observation in the MOPS paper (following Lowe) that $d_1$ alone separates correct and wrong matches poorly, but comparing it with $d_2$ works well. A correct match is much closer than any other candidate; a wrong one has a runner-up that is almost as close. A side effect is that repeated textures (windows, grids, railings) are mostly thrown out, because every copy looks alike and the ratio is near 1.
-
-On the HMMB pair this leaves 16 matches. Most are correct, but match 8 clearly is not: a point on the left floor is matched to the middle of the right image. That is exactly the kind of outlier RANSAC must remove.
+The ratio test comes from the observation in the MOPS paper (following Lowe) that $d_1$ alone separates correct and wrong matches poorly, but comparing it with $d_2$ works well. A correct match is much closer than any other candidate; a wrong one has a runner-up that is almost as close. A side effect is that repeated textures (windows, grids, railings) are mostly thrown out, because every copy looks alike and the ratio is near 1. On the HMMB pair this leaves 16 matches. We want the ratio to be less than the threshold instead of larger since smaller L2 distances among two image descriptors means they are very similar while large L2 distance means the two image descriptors are not similar. 
 
 <div class="p3-grid c1">
   <figure>
     <img src="/images/cs180/proj4/output/B3/feature_match.png" alt="16 feature matches between the left and right HMMB photos" loading="lazy">
-    <figcaption>Matches surviving the ratio test on the HMMB pair (match 8 is an outlier)</figcaption>
+    <figcaption>Matches surviving the ratio test on the HMMB pair</figcaption>
   </figure>
 </div>
 
@@ -719,7 +717,7 @@ On the HMMB pair this leaves 16 matches. Most are correct, but match 8 clearly i
 5. **Refit** $H$ on all inliers with the normalized least squares from A.2.
 6. **Warp and blend** with the bilinear warp and distance-transform feathering from A.4, at quarter resolution.
 
-A single outlier can ruin a least-squares fit, but it can only ruin a RANSAC *sample*, and a bad sample simply gets few inliers and loses. Some samples are degenerate (nearly collinear points), so $H$ sends points to infinity and NumPy warns about a divide by zero. Those samples get zero inliers, so they are discarded without harm.
+A single outlier can ruin a least-squares fit, but it can only ruin a RANSAC *sample*, and a bad sample simply gets few inliers and loses. Some samples are degenerate (nearly collinear points), so $H$ sends points to infinity and NumPy warns about a divide by zero. Those samples get zero inliers, so they are discarded without harm. One thing I found interesting is that running 2000 iterations at random is sufficient to find the best 4 point fit. We don't need to go through all possible combinations of picking 4 matching points. Probability theory would cover it. 
 
 #### Manual vs. automatic
 
