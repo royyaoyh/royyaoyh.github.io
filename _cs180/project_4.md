@@ -708,14 +708,14 @@ The ratio test comes from the observation in the MOPS paper (following Lowe) tha
 
 <div class="p3-grid c1">
   <figure>
-    <img src="/images/cs180/proj4/output/B3/feature_match.png" alt="16 feature matches between the left and right HMMB photos" loading="lazy">
+    <img src="/images/cs180/proj4/output/B3/feature_match_2.png" alt="16 feature matches between the left and right HMMB photos" loading="lazy">
     <figcaption>Matches surviving the ratio test on the HMMB on the fourth floor pair</figcaption>
   </figure>
 </div>
 
 <div class="p3-grid c1">
   <figure>
-    <img src="/images/cs180/proj4/output/B3/feature_match.png" alt="16 feature matches between the left and right HMMB photos" loading="lazy">
+    <img src="/images/cs180/proj4/output/B3/feature_match_3.png" alt="16 feature matches between the left and right HMMB photos" loading="lazy">
     <figcaption>Matches surviving the ratio test on the Wheeler Hall pair</figcaption>
   </figure>
 </div>
